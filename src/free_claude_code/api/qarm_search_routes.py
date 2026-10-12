@@ -204,11 +204,7 @@ async def qarm_web_search(
     provider_used = "duckduckgo_lite_public"
     consumed = 0
     enriched: dict[str, str] = {}
-    if (
-        not items
-        and payload.search_engine in {"auto", "tavily"}
-        and tavily_ready()
-    ):
+    if not items and payload.search_engine in {"auto", "tavily"} and tavily_ready():
         try:
             tavily_items, consumed = await tavily_search(
                 rendered_query,
@@ -258,11 +254,15 @@ async def qarm_web_search(
             "excerpt": (
                 enriched.get(item.url, "")
                 if provider_used == "tavily_researcher_free"
-                else previews[index][0] if index < len(previews) else ""
+                else previews[index][0]
+                if index < len(previews)
+                else ""
             ),
             "read_status": (
-                "provider_excerpt" if provider_used == "tavily_researcher_free"
-                else previews[index][1] if index < len(previews)
+                "provider_excerpt"
+                if provider_used == "tavily_researcher_free"
+                else previews[index][1]
+                if index < len(previews)
                 else "not_requested"
             ),
         }
