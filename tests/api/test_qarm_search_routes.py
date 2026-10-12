@@ -79,6 +79,7 @@ def test_routes_only_offer_private_ui_and_search():
     assert {route.path: route.methods for route in router.routes} == {
         "/admin/qarm/search": {"GET"},
         "/admin/api/qarm/search": {"POST"},
+        "/admin/api/qarm/search/status": {"GET"},
     }
 
 
@@ -97,6 +98,7 @@ def test_specific_phrase_site_rendering_and_hostname_validation():
         {"query": "test", "exact_phrase": 'bad"quote'},
         {"query": " ", "mode": "deep"},
         {"query": "test", "max_results": 20},
+        {"query": "test", "search_engine": "pay-as-you-go"},
     ):
         with pytest.raises(ValidationError):
             QarmSearchRequest(**data)
@@ -221,6 +223,7 @@ def test_search_page_protected_and_displays_sources_without_ai_claim(monkeypatch
     html = qarm_search_page(_request()).body.decode("utf-8")
     assert "البحث" in html
     assert "/admin/api/qarm/search" in html
+    assert 'id="searchEngine"' in html
     assert "لا يجري حاليًا تلخيصًا بالذكاء الاصطناعي" in html
     assert "textContent=result.excerpt" in html
     with pytest.raises(HTTPException) as exc:
