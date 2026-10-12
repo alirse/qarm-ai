@@ -83,7 +83,14 @@ def valid_cookie(request: Request) -> bool:
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         request_origin = _request_origin(request)
         if request_origin != origin:
-            return False
+            # Codespaces proxies can alter the public origin.
+            # Trust browser-generated same-origin fetch metadata only.
+            if not (
+                request_origin is not None
+                and request.headers.get("sec-fetch-site") == "same-origin"
+                and request.headers.get("sec-fetch-mode") in {"cors", "same-origin"}
+            ):
+                return False
     payload = f"{timestamp}.{random_id}.{origin}"
     key = hashlib.sha256(("qarm-admin-v1:" + password).encode()).digest()
     expected = hmac.new(key, payload.encode(), hashlib.sha256).hexdigest()
