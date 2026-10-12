@@ -84,7 +84,7 @@ def new_cookie(origin: str) -> str:
     return f"{timestamp}.{random_id}.{signature}"
 
 
-def valid_cookie(request: Request) -> bool:
+def valid_cookie(request: Request, *, check_write_origin: bool = True) -> bool:
     password = _password()
     value = request.cookies.get(COOKIE_NAME, "")
     if len(password) < 12:
@@ -101,7 +101,7 @@ def valid_cookie(request: Request) -> bool:
     origin = os.environ.get("QARM_ADMIN_PUBLIC_ORIGIN", "").rstrip("/")
     if not _origin_allowed(origin):
         return False
-    if request.method not in ("GET", "HEAD", "OPTIONS"):
+    if check_write_origin and request.method not in ("GET", "HEAD", "OPTIONS"):
         request_origin = _request_origin(request)
         if request_origin != origin:
             # Codespaces proxies can alter the public origin.
