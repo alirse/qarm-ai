@@ -166,7 +166,16 @@ def qarm_login(payload: QarmLoginPayload, request: Request, response: Response):
         if not valid_referer:
             raise HTTPException(status_code=403, detail="Browser origin or login-page referer required")
     elif browser_origin != configured_origin:
-        raise HTTPException(status_code=403, detail="Wrong browser origin")
+        # GitHub's forwarded-port proxy may present a different browser
+        # origin than the configured public URL. Trust the browser's
+        # unforgeable Fetch Metadata only for an explicit same-origin fetch.
+        # Never accept cross-site or same-site requests in this fallback.
+        if (
+            not browser_origin.startswith("https://")
+            or request.headers.get("sec-fetch-site") != "same-origin"
+            or request.headers.get("sec-fetch-mode") not in {"cors", "same-origin"}
+        ):
+            raise HTTPException(status_code=403, detail="Wrong browser origin")
     if not valid_login_password(payload.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     response.set_cookie(
