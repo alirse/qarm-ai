@@ -53,7 +53,7 @@ def native_codex_login_status() -> str:
             timeout=8,
             check=False,
         )
-    except (OSError, subprocess.TimeoutExpired):
+    except OSError, subprocess.TimeoutExpired:
         return "unavailable"
     if result.returncode != 0:
         return "disconnected"
@@ -77,7 +77,9 @@ def native_codex_status() -> dict[str, str | bool]:
     }
 
 
-@router.get("/admin/qarm/codex-local", response_class=HTMLResponse, include_in_schema=False)
+@router.get(
+    "/admin/qarm/codex-local", response_class=HTMLResponse, include_in_schema=False
+)
 def native_codex_page() -> HTMLResponse:
     return HTMLResponse(
         _CODEX_PAGE.read_text(encoding="utf-8"),
@@ -150,9 +152,17 @@ async def native_codex_chat(payload: NativeCodexPrompt) -> dict[str, str]:
             # Explicitly override any FCC proxy configuration. Temporary
             # working directory prevents implicit access to the user's repo.
             command = [
-                binary, "exec", "--json", "--sandbox", "read-only",
-                "--skip-git-repo-check", "-C", scratch,
-                "-c", 'model_provider="openai"', "-",
+                binary,
+                "exec",
+                "--json",
+                "--sandbox",
+                "read-only",
+                "--skip-git-repo-check",
+                "-C",
+                scratch,
+                "-c",
+                'model_provider="openai"',
+                "-",
             ]
             process = None
             try:
@@ -172,7 +182,8 @@ async def native_codex_chat(payload: NativeCodexPrompt) -> dict[str, str]:
                     process.kill()
                     await process.communicate()
                 raise HTTPException(
-                    status_code=504, detail="Codex timed out. The request was not retried."
+                    status_code=504,
+                    detail="Codex timed out. The request was not retried.",
                 ) from None
             except OSError:
                 raise HTTPException(
