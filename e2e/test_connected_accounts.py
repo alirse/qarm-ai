@@ -256,6 +256,22 @@ def test_openai_device_code_login_without_popup(
     card.get_by_role("button", name="Cancel sign-in").click()
     expect(card.get_by_role("button", name="Connect with device code")).to_be_enabled()
 
+def test_switch_browser_attempt_to_device_login(
+    page: Page, admin_base_url: str, accounts: _Accounts
+) -> None:
+    _open(page, admin_base_url)
+    card = page.locator('[data-provider="openai"]')
+    with page.expect_popup() as opened:
+        card.get_by_role("button", name="Browser sign-in (local computer)").click()
+    opened.value.close()
+    expect(card.get_by_role("button", name="Switch to device code")).to_be_visible()
+    card.get_by_role("button", name="Switch to device code").click()
+    expect(card.locator(".provider-meta")).to_have_text(
+        "Enter code ABCD-1234 at https://github.com/login/device"
+    )
+    assert accounts.login_requests == [("openai", "browser"), ("openai", "device")]
+    assert accounts.cancelled == ["openai"]
+
 def test_openai_connect_uses_browser_login(
     page: Page, admin_base_url: str, accounts: _Accounts
 ) -> None:
