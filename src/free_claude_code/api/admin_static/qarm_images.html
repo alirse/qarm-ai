@@ -23,7 +23,16 @@
     .warning{margin-top:27px;background:#fff;border:1px solid #e6dded;border-radius:14px;padding:18px;line-height:1.8}
     #status{margin-top:20px;color:#6c6474}
     button{cursor:pointer;border:1px solid #dad1e8;border-radius:9px;padding:9px 13px;background:white;color:#44316f}
-    button:focus-visible,a:focus-visible{outline:3px solid #8362c5;outline-offset:3px}
+    button:focus-visible,a:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #8362c5;outline-offset:3px}
+    .mock-panel{margin:22px 0 8px;padding:20px;background:#fff;border:1px solid #e6dded;border-radius:18px}
+    .mock-panel h2{margin:0 0 12px;font-size:1.3rem}
+    .mock-panel label{display:block;margin:12px 0 7px;font-weight:700}
+    .mock-panel textarea,.mock-panel select{width:100%;padding:11px;border-radius:9px;border:1px solid #cbc2d7;font:inherit}
+    .mock-panel textarea{min-height:95px;resize:vertical}
+    .mock-panel button{background:#5633a0;color:#fff;margin-top:15px}
+    .mock-panel button:disabled{opacity:.6;cursor:wait}
+    #mockResult{margin-top:14px;display:none}
+    #mockResult img{max-width:100%;width:560px;display:block;border-radius:12px;border:1px solid #ded5e7}
   </style>
 </head>
 <body>
@@ -36,14 +45,29 @@
       <span class="chip">معاينة النماذج — بدون رسوم</span>
       <h1>نماذج توليد الصور</h1>
       <p>هذه قائمة النماذج التي جرّبتها في المتصفح. يمكنك فتح العرض التجريبي لكل نموذج،
-         لكن التوليد المباشر داخل قرم لم يُربط بعد. لن يرسل قرم وصفًا أو صورة إلى أي مزود من هذه الصفحة.</p>
+         لكن التوليد المباشر داخل قرم لم يُربط بعد. لا ترسل الصفحة وصفًا أو صورة إلى Hugging Face.</p>
+    </section>
+    <section class="mock-panel" aria-label="تجربة المحرك الوهمي">
+      <h2>اختبار محرك قرم — محاكاة فقط</h2>
+      <p>اختر نموذجًا واكتب وصفًا لاختبار إرسال الطلب داخل خادم قرم. الناتج صورة ثابتة تحمل كلمة MOCK وليس صورة من أي نموذج.</p>
+      <form id="mockForm">
+        <label for="mockModel">النموذج</label>
+        <select id="mockModel" required></select>
+        <label for="mockPrompt">وصف الصورة</label>
+        <textarea id="mockPrompt" required maxlength="1200" placeholder="اكتب وصف الصورة المراد توليدها مستقبلًا"></textarea>
+        <button id="mockButton" type="submit">اختبار المحاكاة المجانية</button>
+      </form>
+      <p id="mockStatus" role="status" aria-live="polite"></p>
+      <div id="mockResult">
+        <strong>هذه محاكاة، وليست صورة مولّدة بالذكاء الاصطناعي.</strong>
+        <img id="mockImage" alt="صورة ثابتة تجريبية تحمل عبارة QARM MOCK — لا يوجد توليد فعلي">
+      </div>
     </section>
     <section aria-label="نماذج الصور" id="models" class="grid"></section>
     <p id="status" role="status" aria-live="polite">جارٍ تحميل قائمة النماذج...</p>
     <section class="warning">
       <strong>الحماية والتكلفة:</strong> سقف الإنفاق 0 دولار، ولا توجد طلبات توليد آلية أو مفاتيح API
-      أو اتصال GPU من قرم في هذه المرحلة. تشغيل أي تجربة في Hugging Face يخضع لحدود
-      وشروط مساحة العرض الخارجية، ولا يعني وجود حصة مجانية مضمونة للربط البرمجي.
+      أو اتصال GPU من قرم في هذه المرحلة. تجارب Hugging Face الخارجية لها شروط وحصص مستقلة.
     </section>
   </main>
   <script>
@@ -80,21 +104,57 @@
       const status = document.getElementById("status");
       try {
         const response = await fetch("/admin/api/qarm/media/models", {
-          credentials: "same-origin",
-          cache: "no-store"
+          credentials: "same-origin", cache: "no-store"
         });
-        if (!response.ok) throw new Error("تعذر قراءة الكتالوج المحمي");
+        if (!response.ok) throw new Error("Catalog unavailable");
         const data = await response.json();
         if (data.billing_enabled || data.generation_available ||
-            !Array.isArray(data.models)) {
-          throw new Error("حالة الكتالوج غير متوقعة");
-        }
-        data.models.forEach(addModel);
+            !Array.isArray(data.models)) throw new Error("Unexpected catalog state");
+        data.models.forEach(model => {
+          addModel(model);
+          const option = document.createElement("option");
+          option.value = model.id;
+          option.textContent = model.name;
+          document.getElementById("mockModel").append(option);
+        });
         status.textContent = "3 نماذج · جميعها للعرض اليدوي فقط";
       } catch (error) {
         status.textContent = "تعذر عرض النماذج. أعد تسجيل الدخول إلى إدارة قرم ثم حدّث الصفحة.";
       }
     }
+    document.getElementById("mockForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = document.getElementById("mockButton");
+      const status = document.getElementById("mockStatus");
+      document.getElementById("mockResult").style.display = "none";
+      button.disabled = true;
+      status.textContent = "جارٍ اختبار المسار المحلي فقط...";
+      try {
+        const response = await fetch("/admin/api/qarm/media/mock", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          credentials: "same-origin",
+          body: JSON.stringify({
+            model_id: document.getElementById("mockModel").value,
+            prompt: document.getElementById("mockPrompt").value
+          })
+        });
+        if (!response.ok) throw new Error("Mock endpoint unavailable");
+        const result = await response.json();
+        if (result.actual_generation !== false || result.estimated_cost_usd !== 0 ||
+            result.external_requests !== 0 || 
+            !result.result_data_uri.startsWith("data:image/svg+xml;base64,")) {
+          throw new Error("Unexpected mock output");
+        }
+        document.getElementById("mockImage").src = result.result_data_uri;
+        document.getElementById("mockResult").style.display = "block";
+        status.textContent = "اكتملت المحاكاة المحلية. التكلفة: صفر. لم يتم توليد صورة حقيقية.";
+      } catch (error) {
+        status.textContent = "فشل اختبار المحاكاة. تأكد من أن نسخة قرم والخادم محدثان.";
+      } finally {
+        button.disabled = false;
+      }
+    });
     loadModels();
   </script>
 </body>
