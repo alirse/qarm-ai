@@ -177,14 +177,12 @@ async def qarm_web_search(
 
     rendered_query = _search_query(payload)
     candidates: list[WebSearchResult] = []
-    duck_error = False
     if payload.search_engine != "tavily":
         try:
             candidates = await asyncio.wait_for(
                 services.web_tools.search(rendered_query), timeout=22
             )
         except Exception:
-            duck_error = True
             if payload.search_engine == "duckduckgo" or not tavily_ready():
                 raise HTTPException(
                     status_code=502, detail="Public search temporarily unavailable"
