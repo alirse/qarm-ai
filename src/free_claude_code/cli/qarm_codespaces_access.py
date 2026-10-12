@@ -89,12 +89,16 @@ def prepare_codespaces_owner_login(port: int) -> str | None:
     from free_claude_code.api.qarm_admin_session import _origin_allowed
 
     if not _origin_allowed(configured_origin):
-        raise ValueError("Configured Qarm Codespaces origin must be an HTTPS app.github.dev host")
+        raise ValueError(
+            "Configured Qarm Codespaces origin must be an HTTPS app.github.dev host"
+        )
 
     existing_password = os.environ.get("QARM_ADMIN_PASSWORD")
     if existing_password is not None and existing_password != "":
         if len(existing_password) < _PASSWORD_LENGTH_MIN:
-            raise ValueError("Configured Qarm owner password must be at least 20 characters")
+            raise ValueError(
+                "Configured Qarm owner password must be at least 20 characters"
+            )
     else:
         secret = _get_or_create_owner_password(owner_password_file())
         os.environ["QARM_ADMIN_PASSWORD"] = secret
