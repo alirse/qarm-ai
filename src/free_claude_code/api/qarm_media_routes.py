@@ -53,21 +53,21 @@ _IMAGE_MODELS = (
 def qarm_media_catalog() -> dict:
     """Return read-only discovery; future adapters must be separately enabled."""
     return {
-        "status": "catalog_only",
-        "generation_available": False,
+        "status": "live_zerogpu_adapters",
+        "generation_available": True,
         "billing_enabled": False,
         "default_spend_limit_usd": 0,
         "network_calls_made": False,
         "note": (
-            "User verified browser image trials and publicly described Gradio "
-            "endpoints. Automated inference and its free quota remain untested."
+            "Public ZeroGPU adapters are connected. FLUX inference was verified; "
+            "other models depend on upstream quota and availability."
         ),
         "models": [
             {
                 **model,
                 "browser_tested": True,
-                "api_call_tested": False,
-                "integration_status": "not_connected",
+                "api_call_tested": model["id"] == "black-forest-labs/FLUX.1-schnell",
+                "integration_status": "adapter_ready",
             }
             for model in _IMAGE_MODELS
         ],

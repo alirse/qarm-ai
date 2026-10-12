@@ -32,6 +32,7 @@ from .code_sessions_routes import router as code_router
 from .ports import ApiServices
 from .qarm_chat_routes import router as qarm_chat_router
 from .qarm_codex_local_routes import router as qarm_codex_local_router
+from .qarm_hf_routes import router as qarm_hf_router
 from .qarm_media_routes import router as qarm_media_router
 from .qarm_ready_routes import router as qarm_ready_router
 from .qarm_search_routes import router as qarm_search_router
@@ -61,6 +62,7 @@ def create_app(services: ApiServices) -> FastAPI:
     app.include_router(qarm_search_router)
     app.include_router(qarm_ready_router)
     app.include_router(qarm_chat_router)
+    app.include_router(qarm_hf_router)
     app.include_router(qarm_codex_local_router)
     app.include_router(code_router)
     app.include_router(router)

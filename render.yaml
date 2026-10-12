@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: qarm-ai
+    runtime: docker
+    plan: free
+    branch: qarm/python-version-setup
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: QARM_ADMIN_PASSWORD
+        sync: false
+      - key: FCC_OPEN_BROWSER
+        value: "false"

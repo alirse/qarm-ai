@@ -9,7 +9,7 @@ def codespaces_origin_allowed(origin: str) -> bool:
         return (
             url.scheme == "https"
             and bool(url.hostname)
-            and url.hostname.endswith(".app.github.dev")
+            and url.hostname.endswith((".app.github.dev", ".onrender.com"))
             and url.username is None
             and url.password is None
             and url.port is None

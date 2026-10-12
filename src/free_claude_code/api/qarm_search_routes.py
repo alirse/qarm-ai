@@ -19,6 +19,7 @@ from free_claude_code.core.web_tools import WebFetchResult, WebSearchResult
 from .admin_security import require_loopback_admin
 from .dependencies import get_services
 from .ports import ApiServices
+from .qarm_chat_routes import require_chat_write
 from .qarm_tavily import (
     TavilyBudgetExceeded,
     TavilyDisabled,
@@ -166,7 +167,7 @@ async def qarm_web_search(
     services: ApiServices = Depends(get_services),
 ) -> dict:
     """Free DuckDuckGo first; optional bounded Tavily when explicitly configured."""
-    require_loopback_admin(request)
+    require_chat_write(request)
     if not services.requests.current_settings().enable_web_server_tools:
         raise HTTPException(status_code=503, detail="Qarm web tools disabled")
     if payload.search_engine == "tavily" and not tavily_ready():

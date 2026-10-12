@@ -41,6 +41,7 @@ class QarmChatRequest(BaseModel):
         "groq/openai/gpt-oss-120b"
     )
     messages: list[ChatTurn] = Field(min_length=1, max_length=40)
+    stream: bool = False
     max_tokens: int = Field(default=1024, ge=256, le=2048, strict=True)
 
     @model_validator(mode="after")
@@ -73,7 +74,7 @@ def prepare_chat(payload: QarmChatRequest) -> MessagesRequest:
         system=_SYSTEM,
         messages=messages,
         max_tokens=min(payload.max_tokens, available),
-        stream=False,
+        stream=payload.stream,
     )
 
 
@@ -84,7 +85,7 @@ def chat_page(request: Request):
         _PAGE.read_text(encoding="utf-8"),
         headers={
             "Cache-Control": "no-store",
-            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
             "Referrer-Policy": "no-referrer",
             "X-Content-Type-Options": "nosniff",
         },
@@ -120,24 +121,35 @@ async def chat(
     prepared = prepare_chat(payload)
     if _CHAT_LOCK.locked():
         raise HTTPException(status_code=429, detail="قرم يجيب الآن. انتظر اكتمال الرد.")
-    async with _CHAT_LOCK:
+    await _CHAT_LOCK.acquire()
+    lease = None
+    try:
         lease = await services.requests.acquire()
+        await lease.wait_for_token_estimation()
+        settings = lease.settings.model_copy(update={"model_fallbacks": None})
+        handler = MessagesHandler(
+            settings,
+            web_tools=services.web_tools,
+            provider_resolver=_provider_resolver(lease),
+            token_counter=get_token_count,
+            generation_id=lease.generation_id,
+            model_info_lookup=lease.model_info,
+        )
+        response = await handler.create(prepared, request_id=get_request_id(request))
+
+        async def release():
+            try:
+                await lease.release()
+            finally:
+                if _CHAT_LOCK.locked():
+                    _CHAT_LOCK.release()
+
+        return await bind_response_lifetime(response, release)
+    except BaseException:
         try:
-            await lease.wait_for_token_estimation()
-            # This entry point must never silently fall back to a paid provider.
-            settings = lease.settings.model_copy(update={"model_fallbacks": None})
-            handler = MessagesHandler(
-                settings,
-                web_tools=services.web_tools,
-                provider_resolver=_provider_resolver(lease),
-                token_counter=get_token_count,
-                generation_id=lease.generation_id,
-                model_info_lookup=lease.model_info,
-            )
-            response = await handler.create(
-                prepared, request_id=get_request_id(request)
-            )
-            return await bind_response_lifetime(response, lease.release)
-        except BaseException:
-            await lease.release()
-            raise
+            if lease is not None:
+                await lease.release()
+        finally:
+            if _CHAT_LOCK.locked():
+                _CHAT_LOCK.release()
+        raise

@@ -213,3 +213,18 @@ def test_chat_session_csrf_survives_codespaces_proxy_origin_rewrite(monkeypatch)
             == 401
         )
         assert handler.return_value.create.await_count == 1
+
+
+def test_render_owner_session_keeps_remote_chat_private(monkeypatch):
+    from free_claude_code.api.qarm_admin_session import COOKIE_NAME, new_cookie
+
+    origin = "https://qarm-example.onrender.com"
+    monkeypatch.setenv("QARM_ADMIN_PASSWORD", "test-owner-password-that-is-long-enough")
+    monkeypatch.setenv("QARM_ADMIN_PUBLIC_ORIGIN", origin)
+    with TestClient(create_test_app(), base_url=origin) as client:
+        assert client.get("/admin/qarm/chat", follow_redirects=False).status_code == 307
+        client.cookies.set(COOKIE_NAME, new_cookie(origin))
+        assert client.get("/admin/qarm/chat").status_code == 200
+        assert (
+            len(client.get("/admin/api/qarm/chat/bootstrap").json()["csrf_token"]) == 64
+        )

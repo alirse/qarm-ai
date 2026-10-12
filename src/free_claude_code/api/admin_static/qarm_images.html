@@ -36,6 +36,7 @@
   </style>
 </head>
 <body>
+<p style="padding:18px;text-align:center"><a href="/admin/qarm/chat">افتح مساحة قرم الجديدة لتوليد الصور فعليًا ←</a></p>
   <main class="wrap">
     <header>
       <strong>قرم | Qarm AI</strong>
@@ -110,7 +111,7 @@
         });
         if (!response.ok) throw new Error("Catalog unavailable");
         const data = await response.json();
-        if (data.billing_enabled || data.generation_available ||
+        if (data.billing_enabled ||
             !Array.isArray(data.models)) throw new Error("Unexpected catalog state");
         data.models.forEach(model => {
           addModel(model);

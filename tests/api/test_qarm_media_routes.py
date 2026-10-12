@@ -38,9 +38,9 @@ def _request(
     )
 
 
-def test_catalog_never_enables_generation_or_billing():
+def test_catalog_reports_real_adapters_without_billing():
     data = qarm_media_catalog()
-    assert data["generation_available"] is False
+    assert data["generation_available"] is True
     assert data["billing_enabled"] is False
     assert data["default_spend_limit_usd"] == 0
     assert data["network_calls_made"] is False
@@ -50,8 +50,10 @@ def test_catalog_never_enables_generation_or_billing():
         "/run/generate",
         "/run/run",
     }
-    assert all(item["integration_status"] == "not_connected" for item in data["models"])
-    assert all(item["api_call_tested"] is False for item in data["models"])
+    assert all(item["integration_status"] == "adapter_ready" for item in data["models"])
+    assert [item["id"] for item in data["models"] if item["api_call_tested"]] == [
+        FLUX_MODEL_ID
+    ]
 
 
 def test_routes_are_get_only_without_generation_or_write_operations():
@@ -77,7 +79,7 @@ def test_catalog_denies_untrusted_client(monkeypatch):
     assert exc.value.status_code == 403
 
 
-def test_gallery_has_clear_zero_cost_no_inference_messaging(monkeypatch):
+def test_gallery_keeps_offline_tools_and_links_real_generation(monkeypatch):
     monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
     page = qarm_image_gallery(
         _request("127.0.0.1:8000", "127.0.0.1", path="/admin/qarm/images")
@@ -85,7 +87,7 @@ def test_gallery_has_clear_zero_cost_no_inference_messaging(monkeypatch):
     content = page.body.decode("utf-8")
     assert "قرم" in content
     assert "/admin/api/qarm/media/models" in content
-    assert "generation_available" in content
+    assert "افتح مساحة قرم الجديدة لتوليد الصور فعليًا" in content
     assert "billing_enabled" in content
     assert "0 دولار" in content
     assert page.headers["Cache-Control"] == "no-store"

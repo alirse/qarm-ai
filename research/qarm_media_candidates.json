@@ -17,7 +17,7 @@
     "quota_source": "https://huggingface.co/docs/hub/spaces-zerogpu",
     "billing_source": "https://huggingface.co/docs/inference-providers/pricing"
   },
-  "runtime_integration_status": "none_of_these_models_connected_in_qarm",
+  "runtime_integration_status": "groq_chat_and_zerogpu_image_adapters_connected",
   "models": [
     {
       "model_id": "black-forest-labs/FLUX.1-schnell",
@@ -32,8 +32,8 @@
       "license": "apache-2.0",
       "free_browser_demo_url": "https://huggingface.co/spaces/black-forest-labs/FLUX.1-schnell",
       "demo_status_at_review": "running_zero_gpu_listing",
-      "inference_in_qarm": "not_integrated",
-      "policy_review": "required_before_integration",
+      "inference_in_qarm": "live_generation_verified",
+      "policy_review": "public_zero_gpu_only_no_paid_api",
       "source": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
       "owner_reported_browser_generation": "success_2026-10-12",
       "gradio_api_public_contract": {
@@ -57,7 +57,9 @@
         "artifact_id": 11727141422,
         "sample_prompt": "A cozy sunlit courtyard with a brass lantern, cream walls and a small green palm tree, photorealistic",
         "limits": "One successful anonymous sample does not establish quota reliability; Qarm production image adapter still not connected"
-      }
+      },
+      "qarm_endpoint": "/admin/api/qarm/images/generate",
+      "live_test_on": "2026-10-12"
     },
     {
       "model_id": "SG161222/RealVisXL_V5.0",
@@ -73,8 +75,8 @@
       "free_browser_demo_url": "https://huggingface.co/spaces/seawolf2357/REALVISXL-V5",
       "demo_status_at_review": "community_demo_page_only_not_generation_verified",
       "huggingface_provider_available": false,
-      "inference_in_qarm": "not_integrated",
-      "policy_review": "required_before_integration",
+      "inference_in_qarm": "adapter_connected_live_provider_unavailable_in_test",
+      "policy_review": "public_zero_gpu_only_no_paid_api",
       "source": "https://huggingface.co/SG161222/RealVisXL_V5.0",
       "owner_reported_browser_generation": "success_2026-10-12",
       "gradio_api_public_contract": {
@@ -85,7 +87,10 @@
         "checked_on": "2026-10-12",
         "automated_generation_tested": false,
         "free_api_quota_verified": false
-      }
+      },
+      "qarm_endpoint": "/admin/api/qarm/images/generate",
+      "live_test_on": "2026-10-12",
+      "live_test_result": "upstream_event_error_no_completed_image"
     },
     {
       "model_id": "RunDiffusion/Juggernaut-XL-v9",
@@ -101,8 +106,8 @@
       "free_browser_demo_url": "https://huggingface.co/spaces/artificialguybr/JUGGERNAUT-XL-FREE-DEMO",
       "demo_status_at_review": "running_zero_gpu_listing",
       "huggingface_provider_available": false,
-      "inference_in_qarm": "not_integrated",
-      "policy_review": "required_before_integration",
+      "inference_in_qarm": "adapter_connected_live_provider_unavailable_in_test",
+      "policy_review": "public_zero_gpu_only_no_paid_api",
       "source": "https://huggingface.co/RunDiffusion/Juggernaut-XL-v9",
       "owner_reported_browser_generation": "success_2026-10-12",
       "gradio_api_public_contract": {
@@ -113,7 +118,10 @@
         "checked_on": "2026-10-12",
         "automated_generation_tested": false,
         "free_api_quota_verified": false
-      }
+      },
+      "qarm_endpoint": "/admin/api/qarm/images/generate",
+      "live_test_on": "2026-10-12",
+      "live_test_result": "upstream_event_error_no_completed_image"
     },
     {
       "model_id": "Lykon/dreamshaper-xl-1-0",
@@ -226,6 +234,6 @@
     "direct_qarm_integration": "not_integrated"
   },
   "last_owner_live_contract_audit": "2026-10-12",
-  "integration_stage": "one_free_anonymous_flux_api_probe_succeeded_not_connected_to_qarm_ui",
+  "integration_stage": "unified_workspace_flux_generation_verified",
   "last_anonymous_flux_api_trial": "2026-10-12"
 }
