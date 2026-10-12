@@ -247,7 +247,12 @@ def test_owner_write_preflight_never_calls_codex(monkeypatch):
 
 def test_csrf_session_allows_post_even_if_codespaces_proxy_alters_headers(monkeypatch):
     from unittest.mock import patch
-    from free_claude_code.api.qarm_admin_session import COOKIE_NAME, new_cookie, valid_cookie
+
+    from free_claude_code.api.qarm_admin_session import (
+        COOKIE_NAME,
+        new_cookie,
+        valid_cookie,
+    )
     origin = "https://example-8082.app.github.dev"
     with patch.dict("os.environ", {
         "QARM_ADMIN_PASSWORD": "local-secret-pass",
@@ -270,12 +275,12 @@ def test_csrf_session_allows_post_even_if_codespaces_proxy_alters_headers(monkey
         assert not valid_cookie(req("POST", base))
         token = bridge._csrf_token(req("GET", base))
         assert len(token) == 64
-        bridge.require_codex_write(req("POST", base + [(b"x-qarm-csrf", token.encode())]))
+        bridge.require_codex_write(req("POST", [*base, (b"x-qarm-csrf", token.encode())]))
         with pytest.raises(HTTPException) as missing:
             bridge.require_codex_write(req("POST", base))
         assert missing.value.status_code == 401
         with pytest.raises(HTTPException) as wrong:
-            bridge.require_codex_write(req("POST", base + [(b"x-qarm-csrf", b"wrong")]))
+            bridge.require_codex_write(req("POST", [*base, (b"x-qarm-csrf", b"wrong")]))
         assert wrong.value.status_code == 401
         with pytest.raises(HTTPException) as unauthenticated:
             bridge.require_codex_write(req("POST", [(b"x-qarm-csrf", token.encode())]))
