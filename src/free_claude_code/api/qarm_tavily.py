@@ -87,7 +87,7 @@ def tavily_status() -> dict:
         used = _used()
         ready = tavily_ready()
         error = ""
-    except (OSError, sqlite3.Error, TavilyDisabled, ValueError):
+    except OSError, sqlite3.Error, TavilyDisabled, ValueError:
         cap, used, ready = 0, 0, False
         error = "Local quota unavailable (Tavily blocked)"
     return {
