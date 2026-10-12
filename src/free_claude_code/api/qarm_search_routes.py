@@ -66,8 +66,10 @@ class QarmSearchRequest(BaseModel):
         except UnicodeError as exc:
             raise ValueError("Invalid site domain") from exc
         labels = value.split(".")
-        if len(labels) < 2 or len(value) > 253 or any(
-            not _HOST_LABEL.fullmatch(part) for part in labels
+        if (
+            len(labels) < 2
+            or len(value) > 253
+            or any(not _HOST_LABEL.fullmatch(part) for part in labels)
         ):
             raise ValueError("Invalid site hostname")
         return value
@@ -98,9 +100,7 @@ def _eligible_url(url: str, site: str) -> bool:
         return False
 
 
-async def _preview(
-    item: WebSearchResult, services: ApiServices
-) -> tuple[str, str]:
+async def _preview(item: WebSearchResult, services: ApiServices) -> tuple[str, str]:
     """Read an HTTPS page using existing pinned-DNS/redirect SSRF safeguards."""
     if urlsplit(item.url).scheme != "https":
         return "", "https_required"
