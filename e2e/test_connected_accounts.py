@@ -188,7 +188,7 @@ def test_account_modes_wait_for_status_and_recover_after_load_failure(
     openai = page.locator('[data-provider="openai"]')
     expect(copilot.get_by_role("button", name="Loading…", exact=True)).to_be_disabled()
     expect(copilot.get_by_role("button", name="Connect", exact=True)).to_have_count(0)
-    expect(openai.get_by_role("button", name="Connect", exact=True)).to_be_enabled()
+    expect(openai.get_by_role("button", name="Connect with device code")).to_be_enabled()
     accounts.take_pending_status(page).fulfill(
         status=503, json={"detail": "Account status unavailable."}
     )
@@ -204,7 +204,7 @@ def test_account_modes_wait_for_status_and_recover_after_load_failure(
 
     expect(copilot.get_by_role("button", name="Connect", exact=True)).to_be_enabled()
     expect(copilot.get_by_role("button", name="Use device code")).to_have_count(0)
-    expect(openai.get_by_role("button", name="Use device code")).to_have_count(0)
+    expect(openai.get_by_role("button", name="Connect with device code")).to_be_enabled()
     expect(copilot.locator(".provider-meta")).to_contain_text("GitHub Copilot")
     assert "ChatGPT" not in copilot.inner_text()
 
@@ -248,9 +248,9 @@ def test_openai_connect_uses_browser_login(
     accounts.hold_login = True
     _open(page, admin_base_url)
     openai = page.locator('[data-provider="openai"]')
-    expect(openai.get_by_role("button", name="Use device code")).to_have_count(0)
+    expect(openai.get_by_role("button", name="Connect with device code")).to_be_enabled()
     with page.expect_popup() as opened:
-        openai.get_by_role("button", name="Connect", exact=True).click()
+        openai.get_by_role("button", name="Browser sign-in (local computer)").click()
     popup = opened.value
     try:
         assert popup.url == "about:blank"
@@ -270,7 +270,7 @@ def test_openai_connect_uses_browser_login(
     )
     openai.get_by_role("button", name="Cancel sign-in", exact=True).click()
     expect(openai.get_by_role("button", name="Connect", exact=True)).to_be_enabled()
-    expect(openai.get_by_role("button", name="Use device code")).to_have_count(0)
+    expect(openai.get_by_role("button", name="Connect with device code")).to_be_enabled()
 
 
 @pytest.mark.parametrize("restart", [False, True])
