@@ -41,8 +41,11 @@ jobs:
       - name: Test Qarm image catalog without network inference
         run: uv run --locked --no-sync pytest -q -o addopts='' tests/api/test_qarm_media_routes.py tests/api/test_qarm_search_routes.py tests/api/test_qarm_ready_routes.py tests/api/test_qarm_tavily.py
 
+      - name: Validate Codespaces owner login bootstrap in isolation (offline)
+        run: uv run --locked --no-sync pytest -q -o addopts='' tests/api/test_qarm_codespaces_access.py
+
       - name: Validate owner login, ChatGPT device auth and Codex session logic (offline)
         run: |
           node --check src/free_claude_code/api/admin_static/admin.js
-          uv run --locked --no-sync pytest -q -o addopts='' tests/providers/test_openai_codex_auth.py tests/api/test_qarm_codespaces_access.py tests/api/test_qarm_admin_session.py tests/api/test_qarm_remote_admin.py tests/api/test_code_sessions_routes.py
+          uv run --locked --no-sync pytest -q -o addopts='' tests/providers/test_openai_codex_auth.py tests/api/test_qarm_admin_session.py tests/api/test_qarm_remote_admin.py tests/api/test_code_sessions_routes.py
 
