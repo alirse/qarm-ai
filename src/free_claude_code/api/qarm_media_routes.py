@@ -3,11 +3,16 @@
 This module does not call a remote provider, generate images, or load model
 weights. Never equate a Gradio endpoint listing with approved/free inference.
 """
+
+from pathlib import Path
+
 from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
 
 from .admin_security import require_loopback_admin
 
 router = APIRouter()
+_IMAGES_PAGE = Path(__file__).resolve().parent / "admin_static" / "qarm_images.html"
 
 _IMAGE_MODELS = (
     {
@@ -56,8 +61,12 @@ def qarm_media_catalog() -> dict:
             "endpoints. Automated inference and its free quota remain untested."
         ),
         "models": [
-            {**model, "browser_tested": True, "api_call_tested": False,
-             "integration_status": "not_connected"}
+            {
+                **model,
+                "browser_tested": True,
+                "api_call_tested": False,
+                "integration_status": "not_connected",
+            }
             for model in _IMAGE_MODELS
         ],
     }
@@ -68,3 +77,17 @@ def list_qarm_image_models(request: Request) -> dict:
     """Owner-protected metadata endpoint; GET only and zero provider calls."""
     require_loopback_admin(request)
     return qarm_media_catalog()
+
+
+@router.get("/admin/qarm/images", response_class=HTMLResponse, include_in_schema=False)
+def qarm_image_gallery(request: Request) -> HTMLResponse:
+    """Owner-only gallery; links to demos but never invokes inference."""
+    require_loopback_admin(request)
+    return HTMLResponse(
+        _IMAGES_PAGE.read_text(encoding="utf-8"),
+        headers={
+            "Cache-Control": "no-store",
+            "Referrer-Policy": "no-referrer",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
