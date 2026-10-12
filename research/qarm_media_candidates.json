@@ -42,8 +42,21 @@
         "outputs": 2,
         "visibility": "true",
         "checked_on": "2026-10-12",
-        "automated_generation_tested": false,
+        "automated_generation_tested": true,
         "free_api_quota_verified": false
+      },
+      "owner_approved_anonymous_api_trial": {
+        "on": "2026-10-12",
+        "result": "success",
+        "attempted_generation_posts": 1,
+        "uses_paid_api": false,
+        "hf_authentication_used": false,
+        "environment": "GitHub Actions public ubuntu runner",
+        "output": "single WebP image at 512x512",
+        "artifact_run_id": 38205126910,
+        "artifact_id": 11727141422,
+        "sample_prompt": "A cozy sunlit courtyard with a brass lantern, cream walls and a small green palm tree, photorealistic",
+        "limits": "One successful anonymous sample does not establish quota reliability; Qarm production image adapter still not connected"
       }
     },
     {
@@ -213,5 +226,6 @@
     "direct_qarm_integration": "not_integrated"
   },
   "last_owner_live_contract_audit": "2026-10-12",
-  "integration_stage": "owner_protected_catalog_added_but_not_runtime_tested"
+  "integration_stage": "one_free_anonymous_flux_api_probe_succeeded_not_connected_to_qarm_ui",
+  "last_anonymous_flux_api_trial": "2026-10-12"
 }
