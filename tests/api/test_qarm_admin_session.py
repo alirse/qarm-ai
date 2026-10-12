@@ -71,3 +71,25 @@ def test_other_site_cookie_not_accepted():
         "QARM_ADMIN_PUBLIC_ORIGIN": "https://other-8082.app.github.dev",
     }):
         assert not valid_cookie(_request(token))
+
+
+def test_forwarded_codespaces_browser_same_origin_write():
+    with patch.dict("os.environ", {
+        "QARM_ADMIN_PASSWORD": "safe-password-with-24-characters",
+        "QARM_ADMIN_PUBLIC_ORIGIN": ORIGIN,
+    }):
+        token = new_cookie(ORIGIN)
+        headers = [
+            (b"cookie", f"{COOKIE_NAME}={token}".encode()),
+            (b"origin", b"https://browser-proxy.example"),
+            (b"sec-fetch-site", b"same-origin"),
+            (b"sec-fetch-mode", b"cors"),
+        ]
+        request = Request({
+            "type": "http", "method": "POST", "path": "/admin/api/config",
+            "headers": headers, "client": ("192.0.2.1", 12345),
+            "server": ("127.0.0.1", 8082), "scheme": "http",
+        })
+        assert valid_cookie(request)
+        headers[2] = (b"sec-fetch-site", b"cross-site")
+        assert not valid_cookie(Request({**request.scope, "headers": headers}))
