@@ -153,10 +153,11 @@ def require_loopback_admin(request: Request) -> None:
         return
     if _codespaces_authenticated(request):
         return
-    if _codespaces_host(request.headers.get("host")) and len(os.environ.get("QARM_ADMIN_PASSWORD", "")) >= 20:
-        raise HTTPException(
-            status_code=401,
-            detail="Qarm owner login required",
-            headers={"WWW-Authenticate": 'Basic realm="Qarm Admin", charset="UTF-8"'},
-        )
+    # Use a dedicated login page rather than browser Basic Auth prompts.
+    if request.method == "GET" and request.url.path in {
+        "/admin", "/admin/model_config", "/admin/messaging", "/admin/integrations"
+    } and len(os.environ.get("QARM_ADMIN_PASSWORD", "")) >= 12:
+        raise HTTPException(status_code=307, headers={"Location": "/admin/login"})
+    if len(os.environ.get("QARM_ADMIN_PASSWORD", "")) >= 12:
+        raise HTTPException(status_code=401, detail="Qarm owner login required")
     raise HTTPException(status_code=403, detail="Admin UI is local-only")
