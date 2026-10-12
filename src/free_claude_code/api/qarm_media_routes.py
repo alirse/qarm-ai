@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from .admin_security import require_loopback_admin
+from .qarm_image_contracts import QarmImagePlanRequest, prepare_image_plan
 from .qarm_image_engine import QarmImageRequest, simulate_image
 
 router = APIRouter()
@@ -101,3 +102,12 @@ def simulate_qarm_image(payload: QarmImageRequest, request: Request) -> dict:
     if payload.model_id not in {entry["id"] for entry in _IMAGE_MODELS}:
         raise HTTPException(status_code=422, detail="Unknown Qarm image model")
     return simulate_image(model_id=payload.model_id)
+
+
+@router.post("/admin/api/qarm/media/prepare")
+def prepare_qarm_image(payload: QarmImagePlanRequest, request: Request) -> dict:
+    """Owner-only offline planning. This does not send requests to a Space."""
+    require_loopback_admin(request)
+    if payload.model_id not in {entry["id"] for entry in _IMAGE_MODELS}:
+        raise HTTPException(status_code=422, detail="Unknown Qarm image model")
+    return prepare_image_plan(payload)
