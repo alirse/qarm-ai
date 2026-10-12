@@ -19,24 +19,35 @@ from free_claude_code.core.web_tools import WebFetchResult, WebSearchResult
 
 
 def _request(host="127.0.0.1:8000", client="127.0.0.1"):
-    return Request({
-        "type": "http",
-        "path": "/admin/api/qarm/search",
-        "method": "POST",
-        "headers": [(b"host", host.encode())],
-        "server": ("127.0.0.1", 8000),
-        "client": (client, 1234),
-        "scheme": "http",
-    })
+    return Request(
+        {
+            "type": "http",
+            "path": "/admin/api/qarm/search",
+            "method": "POST",
+            "headers": [(b"host", host.encode())],
+            "server": ("127.0.0.1", 8000),
+            "client": (client, 1234),
+            "scheme": "http",
+        }
+    )
 
 
 class FakeWeb:
     def __init__(self, results=None, fail=False):
         self.calls = []
-        self.result_list = results if results is not None else [
-            WebSearchResult(title="Saudi Central Bank", url="https://www.sama.gov.sa/en-US/Pages/default.aspx"),
-            WebSearchResult(title="Financial advice", url="https://example.org/guide"),
-        ]
+        self.result_list = (
+            results
+            if results is not None
+            else [
+                WebSearchResult(
+                    title="Saudi Central Bank",
+                    url="https://www.sama.gov.sa/en-US/Pages/default.aspx",
+                ),
+                WebSearchResult(
+                    title="Financial advice", url="https://example.org/guide"
+                ),
+            ]
+        )
         self.fail = fail
 
     async def search(self, query):
@@ -110,12 +121,16 @@ async def test_quick_search_uses_existing_free_provider_without_page_fetch(monke
 
 
 @pytest.mark.asyncio
-async def test_deep_reads_up_to_three_sources_with_strict_public_https_egress(monkeypatch):
+async def test_deep_reads_up_to_three_sources_with_strict_public_https_egress(
+    monkeypatch,
+):
     monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
-    web = FakeWeb([
-        WebSearchResult(title=f"Source {i}", url=f"https://example.org/{i}")
-        for i in range(6)
-    ])
+    web = FakeWeb(
+        [
+            WebSearchResult(title=f"Source {i}", url=f"https://example.org/{i}")
+            for i in range(6)
+        ]
+    )
     result = await qarm_web_search(
         QarmSearchRequest(query="strong web research", mode="deep", max_results=6),
         _request(),
@@ -125,7 +140,8 @@ async def test_deep_reads_up_to_three_sources_with_strict_public_https_egress(mo
     assert result["source_page_reads_attempted"] == 3
     assert len([item for item in web.calls if item[0] == "fetch"]) == 3
     assert all(
-        egress == WebFetchEgressPolicy(
+        egress
+        == WebFetchEgressPolicy(
             allow_private_network_targets=False,
             allowed_schemes=frozenset({"https"}),
         )
@@ -139,15 +155,17 @@ async def test_deep_reads_up_to_three_sources_with_strict_public_https_egress(mo
 @pytest.mark.asyncio
 async def test_site_filter_removes_other_domains_and_javascript_links(monkeypatch):
     monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
-    web = FakeWeb([
-        WebSearchResult(title="Good", url="https://sama.gov.sa/news"),
-        WebSearchResult(title="Subdomain", url="https://info.sama.gov.sa/report"),
-        WebSearchResult(title="Unrelated", url="https://evil.example/news"),
-        WebSearchResult(title="Spoof", url="https://sama.gov.sa.evil.example"),
-        WebSearchResult(title="Bad scheme", url="javascript:alert(1)"),
-        WebSearchResult(title="Duplicate", url="https://sama.gov.sa/news#fragment"),
-        WebSearchResult(title="Credentials", url="https://hi@sama.gov.sa/news"),
-    ])
+    web = FakeWeb(
+        [
+            WebSearchResult(title="Good", url="https://sama.gov.sa/news"),
+            WebSearchResult(title="Subdomain", url="https://info.sama.gov.sa/report"),
+            WebSearchResult(title="Unrelated", url="https://evil.example/news"),
+            WebSearchResult(title="Spoof", url="https://sama.gov.sa.evil.example"),
+            WebSearchResult(title="Bad scheme", url="javascript:alert(1)"),
+            WebSearchResult(title="Duplicate", url="https://sama.gov.sa/news#fragment"),
+            WebSearchResult(title="Credentials", url="https://hi@sama.gov.sa/news"),
+        ]
+    )
     result = await qarm_web_search(
         QarmSearchRequest(query="قروض", site="sama.gov.sa", mode="quick"),
         _request(),
