@@ -1,0 +1,53 @@
+"""Read-only image catalog tests. No external network or GPU dependencies."""
+import pytest
+from fastapi import HTTPException
+from starlette.requests import Request
+
+from free_claude_code.api.qarm_media_routes import (
+    list_qarm_image_models,
+    qarm_media_catalog,
+    router,
+)
+
+
+def _request(host: str, client: str) -> Request:
+    return Request({
+        "type": "http", "method": "GET", "path": "/admin/api/qarm/media/models",
+        "headers": [(b"host", host.encode())],
+        "server": ("127.0.0.1", 8000), "client": (client, 12345),
+        "scheme": "http",
+    })
+
+
+def test_catalog_never_enables_generation_or_billing():
+    data = qarm_media_catalog()
+    assert data["generation_available"] is False
+    assert data["billing_enabled"] is False
+    assert data["default_spend_limit_usd"] == 0
+    assert data["network_calls_made"] is False
+    assert len(data["models"]) == 3
+    assert {item["api_path"] for item in data["models"]} == {
+        "/run/infer", "/run/generate", "/run/run",
+    }
+    assert all(item["integration_status"] == "not_connected" for item in data["models"])
+    assert all(item["api_call_tested"] is False for item in data["models"])
+
+
+def test_route_does_not_offer_generation_or_write_operations():
+    assert len(router.routes) == 1
+    route = router.routes[0]
+    assert route.path == "/admin/api/qarm/media/models"
+    assert route.methods == {"GET"}
+
+
+def test_catalog_allows_existing_loopback_owner_only(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    result = list_qarm_image_models(_request("127.0.0.1:8000", "127.0.0.1"))
+    assert len(result["models"]) == 3
+
+
+def test_catalog_denies_untrusted_client(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    with pytest.raises(HTTPException) as exc:
+        list_qarm_image_models(_request("public.example", "192.0.2.10"))
+    assert exc.value.status_code == 403
