@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "reviewed_on": "2026-10-12",
+  "purpose": "Research candidate catalog only; never implies an enabled API.",
+  "execution_policy": {
+    "default_spend_limit_usd": 0,
+    "allow_billable_requests": false,
+    "require_explicit_owner_approval_for_paid_service": true,
+    "verify_upstream_terms_per_provider": true,
+    "never_auto_switch_to_billable_provider": true
+  },
+  "free_huggingface_context": {
+    "zerogpu_free_minutes_per_day": 5,
+    "free_monthly_inference_credits_usd": 0.1,
+    "zerogpu_provider_is_best_effort": true,
+    "not_guaranteed_247": true,
+    "quota_source": "https://huggingface.co/docs/hub/spaces-zerogpu",
+    "billing_source": "https://huggingface.co/docs/inference-providers/pricing"
+  },
+  "runtime_integration_status": "none_of_these_models_connected_in_qarm",
+  "models": [
+    {
+      "model_id": "black-forest-labs/FLUX.1-schnell",
+      "capabilities": [
+        "text_to_image"
+      ],
+      "styles": [
+        "general",
+        "photorealistic",
+        "art"
+      ],
+      "license": "apache-2.0",
+      "free_browser_demo_url": "https://huggingface.co/spaces/black-forest-labs/FLUX.1-schnell",
+      "demo_status_at_review": "running_zero_gpu_listing",
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/black-forest-labs/FLUX.1-schnell"
+    },
+    {
+      "model_id": "SG161222/RealVisXL_V5.0",
+      "capabilities": [
+        "text_to_image"
+      ],
+      "styles": [
+        "photorealistic",
+        "portrait",
+        "adult_oriented_model_capability"
+      ],
+      "license": "openrail++",
+      "free_browser_demo_url": "https://huggingface.co/spaces/seawolf2357/REALVISXL-V5",
+      "demo_status_at_review": "community_demo_page_only_not_generation_verified",
+      "huggingface_provider_available": false,
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/SG161222/RealVisXL_V5.0"
+    },
+    {
+      "model_id": "RunDiffusion/Juggernaut-XL-v9",
+      "capabilities": [
+        "text_to_image"
+      ],
+      "styles": [
+        "photorealistic",
+        "cinematic",
+        "portrait"
+      ],
+      "license": "creativeml-openrail-m_with_separate_paid_api_restriction",
+      "free_browser_demo_url": "https://huggingface.co/spaces/artificialguybr/JUGGERNAUT-XL-FREE-DEMO",
+      "demo_status_at_review": "running_zero_gpu_listing",
+      "huggingface_provider_available": false,
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/RunDiffusion/Juggernaut-XL-v9"
+    },
+    {
+      "model_id": "Lykon/dreamshaper-xl-1-0",
+      "capabilities": [
+        "text_to_image"
+      ],
+      "styles": [
+        "fantasy",
+        "art",
+        "illustration"
+      ],
+      "license": "openrail++",
+      "free_browser_demo_url": null,
+      "demo_status_at_review": "not_verified",
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/Lykon/dreamshaper-xl-1-0"
+    },
+    {
+      "model_id": "OnomaAIResearch/Illustrious-XL-v1.0",
+      "capabilities": [
+        "text_to_image"
+      ],
+      "styles": [
+        "anime",
+        "illustration"
+      ],
+      "license": "sdxl-license",
+      "free_browser_demo_url": null,
+      "demo_status_at_review": "not_verified",
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/OnomaAIResearch/Illustrious-XL-v1.0"
+    },
+    {
+      "model_id": "black-forest-labs/FLUX.1-Kontext-dev",
+      "capabilities": [
+        "image_edit"
+      ],
+      "styles": [
+        "photorealistic",
+        "art"
+      ],
+      "license": "flux_dev_noncommercial",
+      "free_browser_demo_url": null,
+      "demo_status_at_review": "not_verified",
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/black-forest-labs/FLUX.1-Kontext-dev"
+    },
+    {
+      "model_id": "Wan-AI/Wan2.2-TI2V-5B",
+      "capabilities": [
+        "text_to_video",
+        "image_to_video"
+      ],
+      "styles": [
+        "general",
+        "cinematic"
+      ],
+      "license": "apache-2.0",
+      "minimum_vram_gb_for_documented_optimized_720p_run": 24,
+      "free_browser_demo_url": null,
+      "demo_status_at_review": "not_verified",
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B"
+    },
+    {
+      "model_id": "Lightricks/LTX-2",
+      "capabilities": [
+        "text_to_video",
+        "image_to_video",
+        "audio_video"
+      ],
+      "styles": [
+        "general",
+        "cinematic"
+      ],
+      "license": "ltx-2-community-license-agreement",
+      "free_browser_demo_url": null,
+      "demo_status_at_review": "not_verified",
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/Lightricks/LTX-2"
+    }
+  ]
+}
