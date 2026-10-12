@@ -118,7 +118,9 @@ def _reserve(cost: int) -> None:
     try:
         path = _db_path()
         path.parent.mkdir(parents=True, exist_ok=True)
-        with closing(sqlite3.connect(path, timeout=5, isolation_level=None)) as connection:
+        with closing(
+            sqlite3.connect(path, timeout=5, isolation_level=None)
+        ) as connection:
             connection.execute("BEGIN IMMEDIATE")
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS monthly_usage (month TEXT PRIMARY KEY, credits INTEGER NOT NULL)"
