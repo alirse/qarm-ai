@@ -103,6 +103,7 @@ def test_page_is_protected_and_mentions_quota_not_unlimited(monkeypatch):
     assert "/admin/api/qarm/codex-local" in text
     assert "confirm_plan_usage:true" in text
     assert "confirmUsage.checked" in text
+    assert "/admin/api/qarm/codex-local/preflight" in text
     assert "لا يستخدم هذا المسار مفاتيح API المدفوعة" in text
     assert "answer.textContent" in text
 
@@ -220,6 +221,7 @@ def test_app_registers_native_codex_owner_routes():
         "/admin/api/qarm/codex-local": {"GET"},
         "/admin/qarm/codex-local": {"GET"},
         "/admin/api/qarm/codex-local/chat": {"POST"},
+        "/admin/api/qarm/codex-local/preflight": {"POST"},
     }
 
 
@@ -227,3 +229,14 @@ def test_readiness_has_native_codex_link():
     from free_claude_code.api.qarm_ready_routes import _READY_PAGE
 
     assert "/admin/qarm/codex-local" in _READY_PAGE.read_text(encoding="utf-8")
+
+
+def test_owner_write_preflight_never_calls_codex(monkeypatch):
+    monkeypatch.setattr(
+        bridge, "native_codex_login_status",
+        lambda: pytest.fail("No Codex status or inference during owner preflight"),
+    )
+    assert bridge.native_codex_owner_write_preflight() == {
+        "owner_write_authorized": True,
+        "inference_performed": False,
+    }
