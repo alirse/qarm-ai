@@ -40,3 +40,7 @@ jobs:
 
       - name: Test Qarm image catalog without network inference
         run: uv run --locked --no-sync pytest -q -o addopts='' tests/api/test_qarm_media_routes.py
+
+      - name: Read public Gradio model choices (GET only)
+        continue-on-error: true
+        run: python3 scripts/qarm-media-option-discovery.py
