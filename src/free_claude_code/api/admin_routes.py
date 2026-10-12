@@ -133,7 +133,7 @@ const password=document.getElementById("password").value;
 try { const response=await fetch("/admin/api/qarm-login",{
 method:"POST",headers:{"Content-Type":"application/json"},
 credentials:"same-origin",body:JSON.stringify({password})});
-if(!response.ok)throw Error("تعذر تسجيل الدخول. تأكد من كلمة المرور وإعداد رابط قرم.");
+if(!response.ok){const details=await response.json().catch(()=>({}));throw Error(details.detail || "تعذر تسجيل الدخول.");}
 location.replace("/admin");
 }catch(err){document.getElementById("error").textContent=err.message;button.disabled=false;}
 });
@@ -148,7 +148,24 @@ def qarm_login(payload: QarmLoginPayload, request: Request, response: Response):
     # Authenticate on a single explicitly configured HTTPS Codespaces origin.
     if not _origin_allowed(configured_origin):
         raise HTTPException(status_code=403, detail="Private Codespaces origin not configured")
-    if request.headers.get("origin") != configured_origin:
+    browser_origin = request.headers.get("origin")
+    if browser_origin is None:
+        # Allow missing Origin only with an exact same-site login-page Referer.
+        from urllib.parse import urlsplit
+        referer = request.headers.get("referer", "")
+        try:
+            ref = urlsplit(referer)
+            valid_referer = (
+                f"{ref.scheme}://{ref.netloc}" == configured_origin
+                and ref.path == "/admin/login"
+                and ref.username is None and ref.password is None
+                and not ref.query and not ref.fragment
+            )
+        except ValueError:
+            valid_referer = False
+        if not valid_referer:
+            raise HTTPException(status_code=403, detail="Browser origin or login-page referer required")
+    elif browser_origin != configured_origin:
         raise HTTPException(status_code=403, detail="Wrong browser origin")
     if not valid_login_password(payload.password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
