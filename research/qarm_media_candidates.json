@@ -133,8 +133,8 @@
       ],
       "license": "apache-2.0",
       "minimum_vram_gb_for_documented_optimized_720p_run": 24,
-      "free_browser_demo_url": null,
-      "demo_status_at_review": "not_verified",
+      "free_browser_demo_url": "https://huggingface.co/spaces/Upsampler/wan-2-2-5b-video",
+      "demo_status_at_review": "community_running_zero_gpu_listing_not_generation_tested",
       "inference_in_qarm": "not_integrated",
       "policy_review": "required_before_integration",
       "source": "https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B"
@@ -169,11 +169,17 @@
         "cinematic"
       ],
       "license": "ltx-2-community-license-agreement",
-      "free_browser_demo_url": null,
-      "demo_status_at_review": "api_playground_exists_cost_unverified",
+      "free_browser_demo_url": "https://huggingface.co/spaces/Lightricks/LTX-2-3",
+      "demo_status_at_review": "official_running_zero_gpu_listing_not_generation_tested",
       "inference_in_qarm": "not_integrated",
       "policy_review": "required_before_integration",
       "source": "https://huggingface.co/Lightricks/LTX-2.3"
     }
-  ]
+  ],
+  "zero_gpu_other_video_demo": {
+    "name": "Wan2.2 14B Fast",
+    "browser_demo_url": "https://huggingface.co/spaces/zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+    "status_at_review": "running_zero_gpu_listing_not_generation_tested",
+    "direct_qarm_integration": "not_integrated"
+  }
 }
