@@ -242,6 +242,20 @@ def test_device_code_connect_copy_and_cancel_ignore_an_old_poll(
     expect(copilot.get_by_role("button", name="Copy code")).to_have_count(0)
 
 
+def test_openai_device_code_login_without_popup(
+    page: Page, admin_base_url: str, accounts: _Accounts
+) -> None:
+    _open(page, admin_base_url)
+    card = page.locator('[data-provider="openai"]')
+    card.get_by_role("button", name="Connect with device code").click()
+    expect(card.locator(".provider-meta")).to_have_text(
+        "Enter code ABCD-1234 at https://github.com/login/device"
+    )
+    assert accounts.login_requests == [("openai", "device")]
+    assert len(page.context.pages) == 1
+    card.get_by_role("button", name="Cancel sign-in").click()
+    expect(card.get_by_role("button", name="Connect with device code")).to_be_enabled()
+
 def test_openai_connect_uses_browser_login(
     page: Page, admin_base_url: str, accounts: _Accounts
 ) -> None:
