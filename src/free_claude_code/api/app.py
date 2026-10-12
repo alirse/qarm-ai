@@ -28,6 +28,7 @@ from free_claude_code.core.version import package_version
 
 from .admin_cache import AdminNoStoreMiddleware, attach_admin_no_store
 from .admin_routes import router as admin_router
+from .qarm_media_routes import router as qarm_media_router
 from .code_sessions_routes import router as code_router
 from .ports import ApiServices
 from .request_errors import ordinary_application_error_response
@@ -52,6 +53,7 @@ def create_app(services: ApiServices) -> FastAPI:
     app.add_middleware(RequestCorrelationMiddleware)
 
     app.include_router(admin_router)
+    app.include_router(qarm_media_router)
     app.include_router(code_router)
     app.include_router(router)
 
