@@ -16,8 +16,8 @@ from pathlib import Path
 
 import httpx
 
-_MAX_LOCAL_CAP = 900
-_DEFAULT_LOCAL_CAP = 200
+_MAX_LOCAL_CAP = 1000
+_DEFAULT_LOCAL_CAP = 1000
 _API = "https://api.tavily.com/search"
 
 
@@ -39,7 +39,7 @@ def _cap() -> int:
     except ValueError as exc:
         raise TavilyDisabled("Invalid Tavily monthly cap") from exc
     if not 1 <= cap <= _MAX_LOCAL_CAP:
-        raise TavilyDisabled("Tavily cap must be between 1 and 900")
+        raise TavilyDisabled("Tavily cap must be between 1 and 1000")
     return cap
 
 
