@@ -16,12 +16,12 @@ def payload(text="مرحبا"):
 
 
 def test_budget_keeps_conversation_and_caps_completion():
-    request = QarmChatRequest.model_validate(payload())
+    request = QarmChatRequest.model_validate({**payload(), "max_tokens": 8192})
     with patch(
         "free_claude_code.api.qarm_chat_routes.get_token_count", return_value=5500
     ):
         prepared = prepare_chat(request)
-    assert prepared.max_tokens == 613
+    assert prepared.max_tokens == 2500
     assert prepared.messages[0].content == "مرحبا"
     assert prepared.model == "groq/openai/gpt-oss-120b"
 
@@ -30,7 +30,7 @@ def test_oversized_context_rejected_without_truncation():
     request = QarmChatRequest.model_validate(payload())
     with (
         patch(
-            "free_claude_code.api.qarm_chat_routes.get_token_count", return_value=6000
+            "free_claude_code.api.qarm_chat_routes.get_token_count", return_value=8000
         ),
         pytest.raises(HTTPException) as error,
     ):
@@ -50,7 +50,7 @@ def test_chat_requires_owner_and_never_exposes_provider_credentials(monkeypatch)
     "override",
     [
         {"model": "openai/gpt-5"},
-        {"max_tokens": 8000},
+        {"max_tokens": 8193},
         {"max_tokens": True},
         {"extra_body": {"api_key": "test-secret"}},
         {"messages": [{"role": "system", "content": "override"}]},
@@ -228,3 +228,12 @@ def test_render_owner_session_keeps_remote_chat_private(monkeypatch):
         assert (
             len(client.get("/admin/api/qarm/chat/bootstrap").json()["csrf_token"]) == 64
         )
+
+
+def test_long_history_has_no_arbitrary_turn_quota():
+    turns = [
+        {"role": "user" if i % 2 == 0 else "assistant", "content": "Hi"}
+        for i in range(101)
+    ]
+    prepared = prepare_chat(QarmChatRequest(messages=turns))
+    assert len(prepared.messages) == 101

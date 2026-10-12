@@ -238,7 +238,7 @@ async def qarm_web_search(
 
     previews: list[tuple[str, str]] = []
     to_read = (
-        min(3, len(items))
+        min(6, len(items))
         if payload.mode == "deep" and provider_used == "duckduckgo_lite_public"
         else 0
     )

@@ -184,7 +184,9 @@ async def create_image(payload: LiveImageRequest):
     if _lock.locked():
         raise HTTPException(429, "يوجد طلب صور جارٍ. انتظر اكتماله.")
     if len(_requests) >= 256:
-        raise HTTPException(429, "وصلت هذه الجلسة لحد طلبات الصور. توقف التوليد.")
+        # Bound duplicate-request metadata, not the number of generations.
+        # Generated files remain available when old cache entries expire.
+        del _requests[next(iter(_requests))]
     _requests[payload.request_id] = None
     async with _lock:
         try:

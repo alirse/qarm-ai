@@ -123,24 +123,24 @@ async def test_quick_search_uses_existing_free_provider_without_page_fetch(monke
 
 
 @pytest.mark.asyncio
-async def test_deep_reads_up_to_three_sources_with_strict_public_https_egress(
+async def test_deep_reads_up_to_six_sources_with_strict_public_https_egress(
     monkeypatch,
 ):
     monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
     web = FakeWeb(
         [
             WebSearchResult(title=f"Source {i}", url=f"https://example.org/{i}")
-            for i in range(6)
+            for i in range(8)
         ]
     )
     result = await qarm_web_search(
-        QarmSearchRequest(query="strong web research", mode="deep", max_results=6),
+        QarmSearchRequest(query="strong web research", mode="deep", max_results=8),
         _request(),
         _services(web),
     )
-    assert result["result_count"] == 6
-    assert result["source_page_reads_attempted"] == 3
-    assert len([item for item in web.calls if item[0] == "fetch"]) == 3
+    assert result["result_count"] == 8
+    assert result["source_page_reads_attempted"] == 6
+    assert len([item for item in web.calls if item[0] == "fetch"]) == 6
     assert all(
         egress
         == WebFetchEgressPolicy(
@@ -151,7 +151,7 @@ async def test_deep_reads_up_to_three_sources_with_strict_public_https_egress(
     )
     assert all(len(row["excerpt"]) <= 2000 for row in result["results"])
     assert result["results"][0]["read_status"] == "read"
-    assert result["results"][4]["read_status"] == "not_requested"
+    assert result["results"][7]["read_status"] == "not_requested"
 
 
 @pytest.mark.asyncio

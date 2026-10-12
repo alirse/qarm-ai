@@ -40,9 +40,9 @@ class QarmChatRequest(BaseModel):
     model: Literal["groq/openai/gpt-oss-120b", "groq/openai/gpt-oss-20b"] = (
         "groq/openai/gpt-oss-120b"
     )
-    messages: list[ChatTurn] = Field(min_length=1, max_length=40)
+    messages: list[ChatTurn] = Field(min_length=1)
     stream: bool = False
-    max_tokens: int = Field(default=1024, ge=256, le=2048, strict=True)
+    max_tokens: int = Field(default=1024, ge=256, le=8192, strict=True)
 
     @model_validator(mode="after")
     def validate_turns(self):
@@ -62,8 +62,9 @@ def prepare_chat(payload: QarmChatRequest) -> MessagesRequest:
         Message(role=turn.role, content=turn.content) for turn in payload.messages
     ]
     estimated = get_token_count(messages, _SYSTEM)
-    # cl100k is approximate for GPT-OSS: leave 25% plus framing headroom.
-    available = 8000 - (estimated * 5 + 3) // 4 - 512
+    # The provider enforces its authoritative TPM budget; token estimates are
+    # approximate. Do not reserve an arbitrary portion of the free allowance.
+    available = 8000 - estimated
     if available < 256:
         raise HTTPException(
             status_code=413,

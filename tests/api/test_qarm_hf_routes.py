@@ -150,3 +150,17 @@ async def test_gallery_result_shape_is_supported():
         0,
     ]
     assert hf._download_url(result, HOST).startswith("https://" + HOST)
+
+
+@pytest.mark.asyncio
+async def test_duplicate_cache_is_not_a_generation_quota(monkeypatch):
+    cache = {uuid4(): {"status": "completed"} for _ in range(256)}
+    monkeypatch.setattr(hf, "_requests", cache)
+    generate = AsyncMock(return_value={"actual_generation": True})
+    monkeypatch.setattr(hf, "generate_free_image", generate)
+    payload = hf.LiveImageRequest(model_id=MODEL, prompt="A new image")
+    result = await hf.create_image(payload)
+    assert result["actual_generation"] is True
+    assert generate.await_count == 1
+    assert len(cache) == 256
+    assert payload.request_id in cache
