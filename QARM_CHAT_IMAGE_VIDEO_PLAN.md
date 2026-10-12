@@ -18,8 +18,12 @@ One authenticated owner-facing interface for (1) customizable conversation and c
 | --- | --- | --- |
 | Conversation with customizable style | dphn/Dolphin-Mistral-24B-Venice-Edition; NousResearch/Hermes-4.3-36B | Open weights, provider policy differs from local self-hosting; benchmark truthfulness/tool use as well as responsiveness |
 | Coding | Qwen/Qwen3-Coder-Next | Distinct from conversation generation; needs performance and cost validation |
-| General images | black-forest-labs/FLUX.1-schnell | Apache 2.0, but large weights and GPU requirements |
-| Illustrations, including adult-oriented artistic model ecosystem | OnomaAIResearch/Illustrious-XL-v1.0 | SDXL-family licensing and particular checkpoints need review before use |
+| General-purpose images | black-forest-labs/FLUX.1-schnell; HiDream-ai/HiDream-I1-Full | General images beyond anime; FLUX Schnell Apache-2.0; HiDream MIT; check hardware and provider terms |
+| Photorealistic portraits, people, and adult-oriented photorealistic styles | SG161222/RealVisXL_V5.0 | Author describes photorealistic SFW/NSFW output. SDXL checkpoint; verify actual hosting availability and license |
+| Cinematic photography and photorealism | RunDiffusion/Juggernaut-XL-v9 | Established photography/cinematic fine-tune; creator restricts paid API deployment without special license |
+| Art, fantasy, and semi-realistic illustration | Lykon/dreamshaper-xl-1-0 | Versatile artistic SDXL rather than anime-only |
+| Anime and illustrations | OnomaAIResearch/Illustrious-XL-v1.0; Laxhar/noobai-XL-1.1 | Distinct optional anime category; review license and age/consent conditions |
+| Image editing | black-forest-labs/FLUX.1-Kontext-dev | Text-directed editing with reference consistency; non-commercial model license and policy apply |
 | Text/image-to-video | Wan-AI/Wan2.2-TI2V-5B; Lightricks/LTX-2 | Large compute demand; LTX-2 is community-licensed, not generic Apache |
 
 ## Constraints
@@ -27,6 +31,7 @@ One authenticated owner-facing interface for (1) customizable conversation and c
 - Default GitHub Codespaces CPU environments are inappropriate for running several tens-of-GB models at interactive latency.
 - Do not promise any provider permits every kind of adult output. Evaluate legitimate consensual adult use, applicable law, terms and model-specific allowances; exclude abusive or non-consensual imagery and content involving minors.
 - Media generation is not present in the existing FCC code-session UI; new interfaces and endpoints will be needed.
+- Crucially, "adult" is a content category rather than a visual style: realistic photos, artistic illustrations and anime require different checkpoints and provider policies. Do not mistake one anime checkpoint for complete adult-content support.
 
 ## Implementation order
 1. Finish remote account access and one read-only chat/coding response with a verified model; avoid expanding unfinished authentication code.
@@ -49,6 +54,12 @@ One authenticated owner-facing interface for (1) customizable conversation and c
 - https://huggingface.co/NousResearch/Hermes-4.3-36B
 - https://huggingface.co/Qwen/Qwen3-Coder-Next
 - https://huggingface.co/black-forest-labs/FLUX.1-schnell
+- https://huggingface.co/SG161222/RealVisXL_V5.0
+- https://huggingface.co/RunDiffusion/Juggernaut-XL-v9
+- https://huggingface.co/Lykon/dreamshaper-xl-1-0
+- https://huggingface.co/HiDream-ai/HiDream-I1-Full
+- https://huggingface.co/black-forest-labs/FLUX.1-Kontext-dev
 - https://huggingface.co/OnomaAIResearch/Illustrious-XL-v1.0
+- https://huggingface.co/Laxhar/noobai-XL-1.1
 - https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B
 - https://huggingface.co/Lightricks/LTX-2
