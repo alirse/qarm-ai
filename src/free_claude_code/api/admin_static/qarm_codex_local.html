@@ -69,18 +69,20 @@ const answer=document.getElementById("answer");
 const confirmUsage=document.getElementById("confirm");
 const prompt=document.getElementById("prompt");
 let ready=false;
+let csrfToken="";
 function showStatus(text,kind,description){
   state.className="state "+kind;
   state.textContent=text;
   info.textContent=description;
 }
 async function refreshStatus(){
-  check.disabled=true;ready=false;send.disabled=true;
+  check.disabled=true;ready=false;send.disabled=true;csrfToken="";
   showStatus("جارٍ الفحص...","","قراءة حالة Codex دون إرسال رسالة إلى النموذج.");
   try{
     const response=await fetch("/admin/api/qarm/codex-local",{credentials:"same-origin",cache:"no-store"});
     if(!response.ok)throw Error("HTTP "+response.status);
     const data=await response.json();
+    csrfToken=typeof data.csrf_token==="string"?data.csrf_token:"";
     ready=data.login==="chatgpt" && data.ready_for_native_chat===true;
     if(ready){
       showStatus("Codex مسجّل عبر ChatGPT","ok","جاهز لمحاولة رسالة بإذنك. لا يوجد استدلال في فحص الحالة.");
@@ -99,7 +101,7 @@ preflight.addEventListener("click",async ()=>{
   preflightResult.textContent="جارٍ فحص جلسة المالك على طلب إرسال تجريبي، دون تشغيل النموذج...";
   try{
     const response=await fetch("/admin/api/qarm/codex-local/preflight",{
-      method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+      method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","X-Qarm-CSRF":csrfToken},
       body:"{}"
     });
     if(response.ok){
@@ -120,7 +122,7 @@ document.getElementById("chat").addEventListener("submit",async event=>{
   try{
     const response=await fetch("/admin/api/qarm/codex-local/chat",{
       method:"POST",credentials:"same-origin",
-      headers:{"Content-Type":"application/json"},
+      headers:{"Content-Type":"application/json","X-Qarm-CSRF":csrfToken},
       body:JSON.stringify({prompt:prompt.value,confirm_plan_usage:true})
     });
     const data=await response.json().catch(()=>({}));
