@@ -39,11 +39,13 @@
 - https://huggingface.co/spaces/black-forest-labs/FLUX.1-schnell/blob/main/app.py
 - https://huggingface.co/spaces/seawolf2357/REALVISXL-V5/blob/main/app.py
 
-## الخطوة العملية التالية: اختبار محلي بلا تكلفة
-من الطرفية **داخل مجلد المستودع** في Codespaces:
+## الخطوة العملية التالية: فحص واجهات عروض الصور دون توليد
+أُضيف السكربت `scripts/qarm-media-api-check.py`. ينفذ طلبات **GET** عامة فقط لاكتشاف metadata وOpenAPI للنماذج الثلاثة؛ لا يرسل prompt ولا يولّد صورة ولا يستهلك دقائق GPU بعملية استدلال ولا يطلب مفتاح أو بطاقة. لم يُنفذ بعد داخل Codespaces الفعلي. لا يضمن أن ربط التوليد متاح أو مجاني.
+
+من الطرفية **داخل مجلد المستودع** في Codespaces يمكن تشغيل نسخة الفرع الحديثة دون تعديل ملفات العمل المحلية:
 ```bash
-bash scripts/qarm-login-check.sh
+git fetch origin qarm/python-version-setup && git show FETCH_HEAD:scripts/qarm-media-api-check.py | python3 -
 ```
-هذا الاختبار لا يسجل الدخول إلى ChatGPT تلقائيًا، ولا يستدعي API مدفوعًا؛ يتحقق من صياغة واجهة JavaScript واختبارات Device Code/الحماية الوظيفية. بعد نجاحه نتحقق من حالة اتصال ChatGPT في واجهة قرم دون حذف أو فصل حساب أو إعادة إعداد.
+بعد قراءة النتيجة نقرر إن كانت أي واجهة متاحة للاختبار المجاني المسموح (بموافقة المالك) أو نكتفي بوضع رابط العرض اليدوي. نعود بعد ذلك إلى اختبار `bash scripts/qarm-login-check.sh` للدخول والمحادثة؛ لم تُحذف تلك الخطوة.
 
 **تنبيه توثيقي:** ملف `QARM_MEDIA_HOSTING_AUDIT_AR.md` وصف اختبارات الصور بأنها غير منفذة وقت كتابته؛ التجربتان الناجحتان المذكورتان أعلاه حدثتا لاحقًا وفق إفادة المالك. تبقى حالة ربط الصور في قرم `not_integrated` صحيحة.
