@@ -1,9 +1,11 @@
-"""Prepare an image provider request without executing it.
+"""Prepare image provider requests without executing them.
 
-The plan is deliberately inert: no HTTP client is created, no secret is read,
-no provider job is submitted, and no model weight/GPU is loaded. A public API
-schema does not prove zero-cost access or permission to reuse a Space.
+All Gradio component choices below were read from public Space configuration on
+2026-10-12. They can change. These payloads have NOT been tested in live
+inference. No HTTP clients, tokens, credentials, jobs or GPU use exist here.
 """
+
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -13,18 +15,31 @@ JUGGERNAUT_MODEL_ID = "RunDiffusion/Juggernaut-XL-v9"
 
 _SUPPORTED = frozenset({FLUX_MODEL_ID, REALVIS_MODEL_ID, JUGGERNAUT_MODEL_ID})
 
+RealvisQuality = Literal["3840 x 2160", "2560 x 1440", "HD+", "Style Zero"]
+JuggernautSampler = Literal[
+    "DPM++ 2M Karras",
+    "DPM++ SDE Karras",
+    "DPM++ 2M SDE Karras",
+    "Euler",
+    "Euler a",
+    "DDIM",
+]
+
 
 class QarmImagePlanRequest(BaseModel):
-    """Strict offline contract. No credentials or billable overrides."""
+    """Strict offline contract. No keys, URLs or billable overrides allowed."""
 
     model_config = ConfigDict(extra="forbid")
 
     model_id: str = Field(min_length=1, max_length=128)
     prompt: str = Field(min_length=1, max_length=1200)
-    width: int = Field(default=768, ge=512, le=1024, multiple_of=64)
-    height: int = Field(default=768, ge=512, le=1024, multiple_of=64)
-    steps: int = Field(default=4, ge=1, le=8)
+    negative_prompt: str = Field(default="", max_length=500)
+    width: int = Field(default=1024, ge=512, le=1024, multiple_of=64)
+    height: int = Field(default=1024, ge=512, le=1024, multiple_of=64)
+    steps: int | None = Field(default=None, ge=1, le=50)
     seed: int = Field(default=0, ge=0, le=2_147_483_647)
+    realvis_quality: RealvisQuality = "Style Zero"
+    juggernaut_sampler: JuggernautSampler = "DPM++ 2M SDE Karras"
 
     @field_validator("prompt")
     @classmethod
@@ -35,11 +50,12 @@ class QarmImagePlanRequest(BaseModel):
 
 
 def prepare_image_plan(payload: QarmImagePlanRequest) -> dict:
-    """Build known positional Gradio arguments, but NEVER invoke the endpoint."""
+    """Prepare known positional Gradio inputs, but NEVER invoke the endpoint."""
 
     if payload.model_id not in _SUPPORTED:
         raise ValueError("Unknown Qarm image model")
 
+    ready = True
     if payload.model_id == FLUX_MODEL_ID:
         space_id = "black-forest-labs/FLUX.1-schnell"
         api_name = "/infer"
@@ -49,30 +65,57 @@ def prepare_image_plan(payload: QarmImagePlanRequest) -> dict:
             False,
             payload.width,
             payload.height,
-            payload.steps,
+            payload.steps if payload.steps is not None else 4,
         ]
-        ready = True
-        note = (
-            "Six positional inputs identified via public Gradio config. "
-            "A real call still requires user approval and verified free access."
-        )
+        note = "Six inputs match the public FLUX Gradio configuration."
     elif payload.model_id == REALVIS_MODEL_ID:
         space_id = "seawolf2357/REALVISXL-V5"
         api_name = "/generate"
-        args = None
-        ready = False
+        args = [
+            "REALVISXL V5.0",
+            payload.prompt,
+            payload.negative_prompt,
+            bool(payload.negative_prompt.strip()),
+            payload.realvis_quality,
+            payload.seed,
+            payload.width,
+            payload.height,
+            3.0,
+            payload.steps if payload.steps is not None else 28,
+            False,
+            1,
+        ]
         note = (
-            "Model Selection and Quality Style choices need validation before "
-            "forming the 12-argument Gradio payload. No values invented."
+            "Twelve inputs use observed RealVisXL model and quality choices. "
+            "The request is not proof of successful live inference."
         )
     else:
         space_id = "artificialguybr/JUGGERNAUT-XL-FREE-DEMO"
         api_name = "/run"
-        args = None
-        ready = False
+        # The Space uses a preset size radio plus separate sliders. Never
+        # invent which mismatched pair would take precedence remotely.
+        ready = payload.width == 1024 and payload.height == 1024
+        args = (
+            [
+                JUGGERNAUT_MODEL_ID,
+                payload.prompt,
+                payload.negative_prompt,
+                payload.seed,
+                1024,
+                1024,
+                7.0,
+                payload.steps if payload.steps is not None else 30,
+                payload.juggernaut_sampler,
+                "1024 x 1024",
+            ]
+            if ready
+            else None
+        )
         note = (
-            "Unnamed dropdown/radio and Sampler choices need validation before "
-            "forming the 10-argument Gradio payload. No values invented."
+            "Ten inputs use observed Juggernaut model/sampler/preset choices. "
+            "Only 1024 x 1024 was verified as a matching preset."
+            if ready
+            else "Choose 1024 x 1024 for this Space; no mismatched size sent."
         )
 
     return {
