@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>قرم | فحص جاهزية المساعد</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#29213d;background:#faf6ef}
+*{box-sizing:border-box}body{margin:0}
+main{max-width:920px;margin:auto;padding:26px 19px 55px}
+a{color:#56348e;text-decoration:none;font-weight:700}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(1.75rem,5vw,2.65rem);margin:28px 0 11px}
+p{line-height:1.85;color:#645a72}
+.small{font-size:.9rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:24px}
+.card{background:#fff;border:1px solid #e8deec;border-radius:18px;padding:20px}
+.card h2{font-size:1.2rem;margin:3px 0 12px}
+.card p{margin:8px 0}.state{display:inline-block;padding:6px 12px;border-radius:99px;background:#f1e8fa;font-weight:700}
+.state.ok{background:#ecf7e9;color:#28652d}.state.pending{background:#fff4dc;color:#7d5423}
+.state.error{background:#fce9e9;color:#9e3333}
+.links{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+.links a{display:inline-block;background:#eee5fa;padding:11px 16px;border-radius:10px}
+button{background:#56348e;color:#fff;border:0;border-radius:10px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer;margin-top:16px}
+button:disabled{opacity:.6;cursor:wait}
+button:focus-visible,a:focus-visible{outline:3px solid #9b75d0;outline-offset:2px}
+aside{margin-top:24px;padding:18px;background:white;border:1px solid #e8deec;border-radius:16px;line-height:1.8}
+#report{font-weight:600;margin:20px 0}
+</style>
+</head>
+<body>
+<main>
+<header><strong>قرم | Qarm AI</strong><a href="/admin">العودة للوحة الإدارة ←</a></header>
+<h1>فحص جاهزية قرم</h1>
+<p>فحص سريع من خادم قرم نفسه، بدون بدء تسجيل دخول، أو إرسال رسالة ذكاء اصطناعي، أو استهلاك رصيد. يبيّن حالة ربط ChatGPT ومدى جاهزية جلسات البرمجة وعدد النماذج الظاهرة.</p>
+<button id="refresh" type="button">تحديث الجاهزية</button>
+<p id="report" role="status" aria-live="polite">جارٍ فحص المزايا المحلية...</p>
+<div class="grid">
+<section class="card" aria-labelledby="authTitle">
+<h2 id="authTitle">حساب ChatGPT</h2>
+<div id="authState" class="state pending">جارٍ الفحص</div>
+<p id="authInfo">التحقق من ربط حساب OpenAI فقط.</p>
+<p class="small">الاتصال بالحساب لا يثبت نجاح محادثة فعلية ولا يعني وجود API مجاني غير محدود.</p>
+</section>
+<section class="card" aria-labelledby="codeTitle">
+<h2 id="codeTitle">جلسات البرمجة</h2>
+<div id="codeState" class="state pending">جارٍ الفحص</div>
+<p id="codeInfo">التحقق من وجود محرّك الجلسات.</p>
+<p class="small">توفر المحرك لا يعني أننا نفّذنا أمرًا برمجيًا أو استهلكنا رصيد نموذج.</p>
+</section>
+<section class="card" aria-labelledby="modelsTitle">
+<h2 id="modelsTitle">النماذج المتاحة</h2>
+<div id="modelsState" class="state pending">جارٍ الفحص</div>
+<p id="modelsInfo">قراءة الكتالوج المحلي فقط.</p>
+<p class="small">العدد لا يضمن عمل أي نموذج، ولا يثبت أن جميع النماذج مجانية.</p>
+</section>
+</div>
+<div class="links">
+<a href="/admin">إعدادات الحساب وربط ChatGPT</a>
+<a href="/admin/code">فتح جلسات البرمجة</a>
+<a href="/admin/qarm/search">البحث المتخصص</a>
+</div>
+<aside>
+<strong>ما الذي لن يفعله هذا الفحص؟</strong>
+لن يعرض كلمات المرور أو رموز الدخول أو المفاتيح، ولن يبدأ طلب Device Code تلقائيًا، ولن يستدعي نموذج محادثة أو صورة. إذا ظهر حسابك متصلًا، اختبر إرسال أول سؤال بنفسك داخل الجلسات بعد التأكد أن النموذج مسموح ضمن حصتك المجانية.
+</aside>
+</main>
+<script>
+"use strict";
+const refresh=document.getElementById("refresh");
+const report=document.getElementById("report");
+function setState(prefix,text,kind,message){
+  const badge=document.getElementById(prefix+"State");
+  badge.className="state "+kind;
+  badge.textContent=text;
+  document.getElementById(prefix+"Info").textContent=message;
+}
+async function getJson(path){
+  const response=await fetch(path,{credentials:"same-origin",cache:"no-store"});
+  if(!response.ok)throw Error("HTTP "+response.status);
+  return response.json();
+}
+async function inspect(){
+  refresh.disabled=true;
+  report.textContent="جارٍ قراءة حالات الخدمات دون أي إرسال إلى نموذج...";
+  ["auth","code","models"].forEach(key=>setState(key,"جارٍ الفحص","pending",""));
+  const paths=[
+    "/admin/api/providers/openai/auth",
+    "/admin/api/code/bootstrap",
+    "/admin/api/models"
+  ];
+  const results=await Promise.allSettled(paths.map(getJson));
+  const auth=results[0];
+  if(auth.status==="fulfilled"){
+    const info=auth.value;
+    if(info.connected===true){
+      setState("auth","الحساب متصل","ok","OpenAI/ChatGPT مسجل في قرم. لم يتم اختبار رد نموذج بعد.");
+    }else if(info.state==="connecting"){
+      setState("auth","بانتظار إكمال الدخول","pending","افتح إعدادات قرم وأكمل تسجيل الدخول من هناك.");
+    }else{
+      setState("auth","غير متصل","pending","افتح إعدادات قرم واربط حساب ChatGPT عبر طريقة الدخول المتاحة.");
+    }
+  }else{
+    setState("auth","تعذر التحقق","error","لا يمكن قراءة حالة حساب ChatGPT من الخادم الحالي.");
+  }
+  const code=results[1];
+  if(code.status==="fulfilled"){
+    const info=code.value;
+    if(info.available===true){
+      const count=Array.isArray(info.models)?info.models.length:0;
+      setState("code","المحرّك موجود","ok","جلسات البرمجة متاحة فنيًا؛ عدد خيارات النماذج في الجلسات: "+count+". لم ننفذ مهمة حقيقية بعد.");
+    }else{
+      setState("code","غير جاهز بعد","pending","الخادم أبلغ أن محرك جلسات البرمجة غير متاح حاليًا.");
+    }
+  }else{
+    setState("code","تعذر التحقق","error","تعذرت قراءة حالة جلسات البرمجة.");
+  }
+  const models=results[2];
+  if(models.status==="fulfilled"&&Array.isArray(models.value.models)){
+    const count=models.value.models.length;
+    setState("models",count+" نموذجًا مدرجًا",count?"ok":"pending",
+      "الكتالوج المحلي يعرض "+count+" خيارًا. لا يوجد اختبار حي للنماذج في هذا الفحص.");
+  }else{
+    setState("models","تعذر التحقق","error","تعذرت قراءة قائمة النماذج.");
+  }
+  const successful=results.filter(value=>value.status==="fulfilled").length;
+  report.textContent="انتهى الفحص المحلي: "+successful+" من 3 قراءات نجحت. لا يوجد استدلال أو تكلفة نموذج من هذا الفحص.";
+  refresh.disabled=false;
+}
+refresh.addEventListener("click",inspect);
+inspect();
+</script>
+</body>
+</html>
