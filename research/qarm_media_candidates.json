@@ -34,7 +34,17 @@
       "demo_status_at_review": "running_zero_gpu_listing",
       "inference_in_qarm": "not_integrated",
       "policy_review": "required_before_integration",
-      "source": "https://huggingface.co/black-forest-labs/FLUX.1-schnell"
+      "source": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+      "owner_reported_browser_generation": "success_2026-10-12",
+      "gradio_api_public_contract": {
+        "path": "/run/infer",
+        "inputs": 6,
+        "outputs": 2,
+        "visibility": "true",
+        "checked_on": "2026-10-12",
+        "automated_generation_tested": false,
+        "free_api_quota_verified": false
+      }
     },
     {
       "model_id": "SG161222/RealVisXL_V5.0",
@@ -52,7 +62,17 @@
       "huggingface_provider_available": false,
       "inference_in_qarm": "not_integrated",
       "policy_review": "required_before_integration",
-      "source": "https://huggingface.co/SG161222/RealVisXL_V5.0"
+      "source": "https://huggingface.co/SG161222/RealVisXL_V5.0",
+      "owner_reported_browser_generation": "success_2026-10-12",
+      "gradio_api_public_contract": {
+        "path": "/run/generate",
+        "inputs": 12,
+        "outputs": 2,
+        "visibility": "true",
+        "checked_on": "2026-10-12",
+        "automated_generation_tested": false,
+        "free_api_quota_verified": false
+      }
     },
     {
       "model_id": "RunDiffusion/Juggernaut-XL-v9",
@@ -70,7 +90,17 @@
       "huggingface_provider_available": false,
       "inference_in_qarm": "not_integrated",
       "policy_review": "required_before_integration",
-      "source": "https://huggingface.co/RunDiffusion/Juggernaut-XL-v9"
+      "source": "https://huggingface.co/RunDiffusion/Juggernaut-XL-v9",
+      "owner_reported_browser_generation": "success_2026-10-12",
+      "gradio_api_public_contract": {
+        "path": "/run/run",
+        "inputs": 10,
+        "outputs": 2,
+        "visibility": "unspecified",
+        "checked_on": "2026-10-12",
+        "automated_generation_tested": false,
+        "free_api_quota_verified": false
+      }
     },
     {
       "model_id": "Lykon/dreamshaper-xl-1-0",
@@ -181,5 +211,7 @@
     "browser_demo_url": "https://huggingface.co/spaces/zerogpu-aoti/wan2-2-fp8da-aoti-faster",
     "status_at_review": "running_zero_gpu_listing_not_generation_tested",
     "direct_qarm_integration": "not_integrated"
-  }
+  },
+  "last_owner_live_contract_audit": "2026-10-12",
+  "integration_stage": "owner_protected_catalog_added_but_not_runtime_tested"
 }
