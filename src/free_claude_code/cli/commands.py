@@ -72,10 +72,17 @@ def serve() -> None:
     # Codespaces is remote even when its forwarded port is Private. Bootstrap
     # a persistent owner password + exact HTTPS origin before app construction.
     # Never print a secret to logs, and never change non-Codespaces behavior.
-    from .qarm_codespaces_access import prepare_codespaces_owner_login
+    from .qarm_codespaces_access import (
+        _codespaces_enabled,
+        prepare_codespaces_owner_login,
+    )
 
     try:
-        owner_login_url = prepare_codespaces_owner_login(get_settings().port)
+        owner_login_url = (
+            prepare_codespaces_owner_login(get_settings().port)
+            if _codespaces_enabled()
+            else None
+        )
     except (OSError, ValueError) as exc:
         logger.error("Could not prepare private Codespaces owner login: {}", exc)
         raise SystemExit(1) from None

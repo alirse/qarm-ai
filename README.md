@@ -1,3 +1,5 @@
+> قرم Qarm AI: [دليل المحادثة العربية والآيفون وحدود Groq](QARM.md)
+
 <div align="center">
 
 <h1>

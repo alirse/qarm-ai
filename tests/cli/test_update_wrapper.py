@@ -64,7 +64,7 @@ def fixture_wheel(area, url):
         archive.writestr(
             f"{dist}.dist-info/METADATA",
             "Metadata-Version: 2.1\nName: free-claude-code\nVersion: 1.0.0\n"
-            "Requires-Dist: httpx>=0.28.1\nRequires-Dist: packaging>=26.3\n",
+            "Requires-Dist: httpx[socks]>=0.28.1\nRequires-Dist: packaging>=26.3\n",
         )
         archive.writestr(
             f"{dist}.dist-info/WHEEL",

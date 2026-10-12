@@ -28,12 +28,13 @@ from free_claude_code.core.version import package_version
 
 from .admin_cache import AdminNoStoreMiddleware, attach_admin_no_store
 from .admin_routes import router as admin_router
-from .qarm_media_routes import router as qarm_media_router
-from .qarm_search_routes import router as qarm_search_router
-from .qarm_ready_routes import router as qarm_ready_router
-from .qarm_codex_local_routes import router as qarm_codex_local_router
 from .code_sessions_routes import router as code_router
 from .ports import ApiServices
+from .qarm_chat_routes import router as qarm_chat_router
+from .qarm_codex_local_routes import router as qarm_codex_local_router
+from .qarm_media_routes import router as qarm_media_router
+from .qarm_ready_routes import router as qarm_ready_router
+from .qarm_search_routes import router as qarm_search_router
 from .request_errors import ordinary_application_error_response
 from .request_ids import (
     RequestCorrelationMiddleware,
@@ -59,6 +60,7 @@ def create_app(services: ApiServices) -> FastAPI:
     app.include_router(qarm_media_router)
     app.include_router(qarm_search_router)
     app.include_router(qarm_ready_router)
+    app.include_router(qarm_chat_router)
     app.include_router(qarm_codex_local_router)
     app.include_router(code_router)
     app.include_router(router)

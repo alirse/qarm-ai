@@ -13,6 +13,8 @@ import stat
 import sys
 from pathlib import Path
 
+from free_claude_code.core.qarm_access import codespaces_origin_allowed
+
 _CODESPACE_NAME = re.compile(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\Z")
 _PASSWORD_LENGTH_MIN = 12
 
@@ -86,9 +88,7 @@ def prepare_codespaces_owner_login(port: int) -> str | None:
     configured_origin = os.environ.get("QARM_ADMIN_PUBLIC_ORIGIN") or discovered_origin
 
     # Validate a manually supplied origin instead of silently weakening access.
-    from free_claude_code.api.qarm_admin_session import _origin_allowed
-
-    if not _origin_allowed(configured_origin):
+    if not codespaces_origin_allowed(configured_origin):
         raise ValueError(
             "Configured Qarm Codespaces origin must be an HTTPS app.github.dev host"
         )

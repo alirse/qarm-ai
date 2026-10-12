@@ -3,6 +3,7 @@
 The cookie is scoped to the browser's HTTPS origin. It does not change model
 selection or provider rules. Keep the Codespaces forwarded port Private.
 """
+
 import hashlib
 import hmac
 import os
@@ -12,30 +13,16 @@ from urllib.parse import urlsplit
 
 from fastapi import Request
 
+from free_claude_code.core.qarm_access import (
+    codespaces_origin_allowed as _origin_allowed,
+)
+
 COOKIE_NAME = "qarm_admin_session"
 MAX_AGE = 3600 * 8
 
 
 def _password() -> str:
     return os.environ.get("QARM_ADMIN_PASSWORD", "")
-
-
-def _origin_allowed(origin: str) -> bool:
-    try:
-        url = urlsplit(origin)
-        return (
-            url.scheme == "https"
-            and bool(url.hostname)
-            and url.hostname.endswith(".app.github.dev")
-            and url.username is None
-            and url.password is None
-            and url.port is None
-            and not url.path
-            and not url.query
-            and not url.fragment
-        )
-    except ValueError:
-        return False
 
 
 def _request_origin(request: Request) -> str | None:
@@ -94,7 +81,7 @@ def valid_cookie(request: Request, *, check_write_origin: bool = True) -> bool:
         age = time.time() - int(timestamp)
         if age < 0 or age > MAX_AGE or len(random_id) != 24 or len(signature) != 64:
             return False
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return False
     # Recover browser origin from the Referer/Origin on writes, or the
     # configured public address on reads. These must match cookie audience.
@@ -103,15 +90,14 @@ def valid_cookie(request: Request, *, check_write_origin: bool = True) -> bool:
         return False
     if check_write_origin and request.method not in ("GET", "HEAD", "OPTIONS"):
         request_origin = _request_origin(request)
-        if request_origin != origin:
-            # Codespaces proxies can alter the public origin.
-            # Trust browser-generated same-origin fetch metadata only.
-            if not (
-                _valid_forwarded_https_origin(request.headers.get("origin"))
-                and request.headers.get("sec-fetch-site") == "same-origin"
-                and request.headers.get("sec-fetch-mode") in {"cors", "same-origin"}
-            ):
-                return False
+        # Codespaces proxies can alter the public origin.
+        # Trust browser-generated same-origin fetch metadata only.
+        if request_origin != origin and not (
+            _valid_forwarded_https_origin(request.headers.get("origin"))
+            and request.headers.get("sec-fetch-site") == "same-origin"
+            and request.headers.get("sec-fetch-mode") in {"cors", "same-origin"}
+        ):
+            return False
     payload = f"{timestamp}.{random_id}.{origin}"
     key = hashlib.sha256(("qarm-admin-v1:" + password).encode()).digest()
     expected = hmac.new(key, payload.encode(), hashlib.sha256).hexdigest()

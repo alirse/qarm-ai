@@ -424,3 +424,35 @@ async def test_distinct_bodies_get_independent_tpm_corrections() -> None:
     assert execution.attempts_started == 4
     assert first_body["max_completion_tokens"] == _CORRECTED_MAX
     assert second_body["max_completion_tokens"] == 6_000
+
+
+@pytest.mark.asyncio
+async def test_qarm_reported_8861_token_request_recovers_without_losing_prompt():
+    """The owner's actual 8000/8861 rejection must succeed on one corrected retry."""
+    provider = _provider()
+    request = make_messages_request(_MODEL, max_tokens=8192)
+    error = _status_error(
+        detail=_detail(
+            "Request too large for model `openai/gpt-oss-120b` on tokens per minute "
+            "(TPM): Limit 8000, Requested 8861, please reduce your message size"
+        )
+    )
+    create = AsyncMock(side_effect=[error, SDKStreamDouble(_successful_stream())])
+    try:
+        with patch.object(provider._client.chat.completions, "create", create):
+            raw = "".join(
+                [
+                    event
+                    async for event in provider.stream_messages(
+                        request, reasoning=ReasoningPolicy.off()
+                    )
+                ]
+            )
+        assert "working" in raw
+        assert create.await_count == 2
+        first, second = [call.kwargs for call in create.await_args_list]
+        assert second["max_completion_tokens"] == 7331
+        assert first["messages"] == second["messages"]
+        assert "event: error" not in raw
+    finally:
+        await provider.cleanup()

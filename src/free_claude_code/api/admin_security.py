@@ -155,7 +155,7 @@ def require_loopback_admin(request: Request) -> None:
         return
     # Use a dedicated login page rather than browser Basic Auth prompts.
     if request.method == "GET" and request.url.path in {
-        "/admin", "/admin/model_config", "/admin/messaging", "/admin/integrations"
+        "/admin", "/admin/qarm/chat", "/admin/model_config", "/admin/messaging", "/admin/integrations"
     } and len(os.environ.get("QARM_ADMIN_PASSWORD", "")) >= 12:
         raise HTTPException(status_code=307, headers={"Location": "/admin/login"})
     if len(os.environ.get("QARM_ADMIN_PASSWORD", "")) >= 12:
