@@ -606,6 +606,15 @@ function populateConnectedAccountActions(provider, status, actions) {
       (button) => startConnectedAccountLogin(providerId, defaultMode, button),
     ),
   );
+  if (modes.includes("device") && defaultMode !== "device") {
+    actions.appendChild(
+      authButton(
+        "Connect with device code",
+        (button) => startConnectedAccountLogin(providerId, "device", button),
+        "secondary-button",
+      ),
+    );
+  }
 }
 
 function authButton(label, action, className = "primary-button") {
