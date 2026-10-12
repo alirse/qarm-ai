@@ -9,6 +9,8 @@ from urllib.parse import urlsplit
 
 from fastapi import HTTPException, Request
 
+from .qarm_admin_session import valid_cookie
+
 
 def _is_loopback_host(host: str | None) -> bool:
     if host is None:
@@ -146,6 +148,8 @@ def require_loopback_admin(request: Request) -> None:
         and _authority_is_local(request.headers.get("host"))
         and _origin_is_local(request.headers.get("origin"))
     ):
+        return
+    if valid_cookie(request):
         return
     if _codespaces_authenticated(request):
         return
