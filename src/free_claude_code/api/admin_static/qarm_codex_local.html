@@ -37,6 +37,8 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f1fa;border-radius
 <span id="state" class="state">جارٍ الفحص...</span>
 <p id="info">الفحص المحلي لا يرسل أي طلب إلى نموذج.</p>
 <button id="check" type="button">تحديث الحالة</button>
+<button id="preflight" type="button">فحص صلاحية الإرسال دون استهلاك حصة</button>
+<p id="preflightResult" role="status" aria-live="polite">لم نفحص صلاحية الإرسال بعد.</p>
 </section>
 <section class="panel">
 <h2>رسالة إلى النموذج</h2>
@@ -61,6 +63,8 @@ const state=document.getElementById("state");
 const info=document.getElementById("info");
 const check=document.getElementById("check");
 const send=document.getElementById("send");
+const preflight=document.getElementById("preflight");
+const preflightResult=document.getElementById("preflightResult");
 const answer=document.getElementById("answer");
 const confirmUsage=document.getElementById("confirm");
 const prompt=document.getElementById("prompt");
@@ -90,6 +94,25 @@ async function refreshStatus(){
   }finally{check.disabled=false;send.disabled=!ready;}
 }
 check.addEventListener("click",refreshStatus);
+preflight.addEventListener("click",async ()=>{
+  preflight.disabled=true;
+  preflightResult.textContent="جارٍ فحص جلسة المالك على طلب إرسال تجريبي، دون تشغيل النموذج...";
+  try{
+    const response=await fetch("/admin/api/qarm/codex-local/preflight",{
+      method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+      body:"{}"
+    });
+    if(response.ok){
+      preflightResult.textContent="نجح فحص صلاحية الإرسال. لم يُرسل أي طلب إلى النموذج.";
+    }else if(response.status===401){
+      preflightResult.textContent="يرفض الخادم جلسة المالك عند POST. افتح صفحة دخول قرم بنفس عنوان هذا التبويب، ثم أعد فحص الصلاحية. لم يُرسل شيء إلى النموذج.";
+    }else{
+      preflightResult.textContent="تعذر فحص الإرسال (HTTP "+response.status+"). لم يُرسل شيء إلى النموذج.";
+    }
+  }catch(e){
+    preflightResult.textContent="تعذر الاتصال بخادم قرم. لم يُرسل أي شيء إلى النموذج.";
+  }finally{preflight.disabled=false;}
+});
 document.getElementById("chat").addEventListener("submit",async event=>{
   event.preventDefault();
   if(!ready || !confirmUsage.checked || !prompt.value.trim())return;
