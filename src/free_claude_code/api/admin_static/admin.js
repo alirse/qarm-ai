@@ -576,6 +576,13 @@ function populateConnectedAccountActions(provider, status, actions) {
     return;
   }
   if (status.state === "connecting") {
+    if (providerId === "openai" && status.mode === "browser" && status.supported_login_modes?.includes("device")) {
+      actions.appendChild(authButton(
+        "Switch to device code",
+        (button) => startConnectedAccountLogin(providerId, "device", button, true),
+        "primary-button",
+      ));
+    }
     const target = status.authorization_url || status.verification_url;
     if (target) {
       actions.appendChild(authButton("Open sign-in", () => window.open(target, "_blank", "noopener")));
@@ -600,21 +607,24 @@ function populateConnectedAccountActions(provider, status, actions) {
     actions.appendChild(authButton("Retry", () => refreshConnectedAccount(provider)));
     return;
   }
-  actions.appendChild(
-    authButton(
-      "Connect",
-      (button) => startConnectedAccountLogin(providerId, defaultMode, button),
-    ),
-  );
-  if (modes.includes("device") && defaultMode !== "device") {
-    actions.appendChild(
-      authButton(
-        "Connect with device code",
-        (button) => startConnectedAccountLogin(providerId, "device", button),
+  if (providerId === "openai" && modes.includes("device")) {
+    actions.appendChild(authButton(
+      "Connect with device code",
+      (button) => startConnectedAccountLogin(providerId, "device", button),
+    ));
+    if (modes.includes("browser")) {
+      actions.appendChild(authButton(
+        "Browser sign-in (local computer)",
+        (button) => startConnectedAccountLogin(providerId, "browser", button),
         "secondary-button",
-      ),
-    );
+      ));
+    }
+    return;
   }
+  actions.appendChild(authButton(
+    "Connect",
+    (button) => startConnectedAccountLogin(providerId, defaultMode, button),
+  ));
 }
 
 function authButton(label, action, className = "primary-button") {
@@ -660,13 +670,16 @@ function updateConnectedAccountCard(provider, status) {
   renderProviderDialogActions(provider);
 }
 
-async function startConnectedAccountLogin(providerId, mode, button) {
+async function startConnectedAccountLogin(providerId, mode, button, cancelPending = false) {
   const buttons = button.closest(".provider-actions").querySelectorAll("button");
   buttons.forEach((action) => { action.disabled = true; });
   clearConnectedAccountPoll(providerId);
   const popup = mode === "browser" ? window.open("about:blank", "_blank") : null;
   if (popup) popup.opener = null;
   try {
+    if (cancelPending) {
+      await api(`/admin/api/providers/${providerId}/auth/cancel`, { method: "POST" });
+    }
     const status = await api(`/admin/api/providers/${providerId}/auth/login`, {
       method: "POST",
       body: JSON.stringify({ mode }),
