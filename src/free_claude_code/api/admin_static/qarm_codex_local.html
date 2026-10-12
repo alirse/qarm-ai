@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>قرم | Codex من حساب ChatGPT</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#29213d;background:#faf6ef}
+*{box-sizing:border-box}body{margin:0}
+main{max-width:820px;margin:auto;padding:26px 19px 55px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:clamp(1.75rem,5vw,2.5rem);margin:28px 0 12px}
+p{line-height:1.85;color:#645a72}
+a{color:#56348e;text-decoration:none;font-weight:700}
+.panel{padding:20px;background:white;border:1px solid #e8deec;border-radius:18px;margin:18px 0}
+.state{font-weight:700;display:inline-block;background:#fff4dc;color:#7d5423;padding:6px 12px;border-radius:99px}
+.state.ok{background:#ecf7e9;color:#28652d}.state.error{background:#fce9e9;color:#9e3333}
+textarea{width:100%;font:inherit;min-height:115px;resize:vertical;padding:12px;border:1px solid #a89ab8;border-radius:12px}
+button{background:#56348e;color:#fff;border:0;border-radius:10px;padding:12px 18px;font:inherit;font-weight:700;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid #9b75d0;outline-offset:2px}
+label{display:block;margin:12px 0;line-height:1.8}
+.check{display:flex;align-items:start;gap:10px}
+.check input{margin-top:8px;flex:none}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f1fa;border-radius:12px;padding:15px;line-height:1.7;min-height:65px}
+.small{font-size:.91rem}
+</style>
+</head>
+<body>
+<main>
+<header><strong>قرم | Qarm AI</strong><a href="/admin/qarm/ready">العودة لفحص الجاهزية ←</a></header>
+<h1>محادثة قرم عبر Codex CLI</h1>
+<p>هذه طريقة مستقلة تستفيد من تسجيل دخول Codex CLI الموجود في Codespaces. لا تحتاج تسجيل دخول جديد، ولا تنسخ رموز حسابك إلى ملفات قرم.</p>
+<section class="panel">
+<h2>حالة حساب Codex CLI</h2>
+<span id="state" class="state">جارٍ الفحص...</span>
+<p id="info">الفحص المحلي لا يرسل أي طلب إلى نموذج.</p>
+<button id="check" type="button">تحديث الحالة</button>
+</section>
+<section class="panel">
+<h2>رسالة إلى النموذج</h2>
+<p class="small">عند الإرسال يستخدم Codex حساب ChatGPT المسجّل محليًا، وقد تُحتسب المحادثة من حدود خطة ChatGPT. لا يستخدم هذا المسار مفاتيح API المدفوعة. تنفّذ المحادثة في مجلد مؤقت بوضع القراءة فقط؛ ولا يُسمح بتعديل ملفات مشروعك في هذه الواجهة.</p>
+<form id="chat">
+<label for="prompt">رسالتك</label>
+<textarea id="prompt" minlength="1" maxlength="4000" placeholder="مثال: اشرح لي مفهوم API بلغة بسيطة" required></textarea>
+<label class="check">
+<input id="confirm" type="checkbox" required>
+<span>أوافق على إرسال هذه الرسالة إلى Codex الآن، وأفهم أنها تستهلك من حدود استخدام خطة ChatGPT. لا أريد استخدام API مدفوع.</span>
+</label>
+<button id="send" type="submit" disabled>إرسال إلى Codex</button>
+</form>
+<h3>الرد</h3>
+<pre id="answer" role="status" aria-live="polite">لم تُرسل أي رسالة بعد.</pre>
+</section>
+<p class="small">ملاحظة: هذه الجلسة مستقلة عن بطاقة «OpenAI / ChatGPT» في Providers. ظهور «متصل» هنا لا يغيّر اتصال OAuth الخاص بقرم، ولا يضمن حصة غير محدودة أو نجاح أول طلب حي.</p>
+</main>
+<script>
+"use strict";
+const state=document.getElementById("state");
+const info=document.getElementById("info");
+const check=document.getElementById("check");
+const send=document.getElementById("send");
+const answer=document.getElementById("answer");
+const confirmUsage=document.getElementById("confirm");
+const prompt=document.getElementById("prompt");
+let ready=false;
+function showStatus(text,kind,description){
+  state.className="state "+kind;
+  state.textContent=text;
+  info.textContent=description;
+}
+async function refreshStatus(){
+  check.disabled=true;ready=false;send.disabled=true;
+  showStatus("جارٍ الفحص...","","قراءة حالة Codex دون إرسال رسالة إلى النموذج.");
+  try{
+    const response=await fetch("/admin/api/qarm/codex-local",{credentials:"same-origin",cache:"no-store"});
+    if(!response.ok)throw Error("HTTP "+response.status);
+    const data=await response.json();
+    ready=data.login==="chatgpt" && data.ready_for_native_chat===true;
+    if(ready){
+      showStatus("Codex مسجّل عبر ChatGPT","ok","جاهز لمحاولة رسالة بإذنك. لا يوجد استدلال في فحص الحالة.");
+    }else if(data.login==="api_key"){
+      showStatus("تم اكتشاف مفتاح API","error","تم تعطيل الإرسال؛ هذا المسار يقبل حساب ChatGPT فقط ولا يستخدم API مدفوعًا.");
+    }else{
+      showStatus("Codex غير متصل بحساب ChatGPT","error","تحقق من codex login status داخل Codespaces.");
+    }
+  }catch(e){
+    showStatus("تعذر فحص Codex","error","تعذر الاتصال بخادم قرم. لا ترسل أي معلومات سرية.");
+  }finally{check.disabled=false;send.disabled=!ready;}
+}
+check.addEventListener("click",refreshStatus);
+document.getElementById("chat").addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!ready || !confirmUsage.checked || !prompt.value.trim())return;
+  send.disabled=true;answer.textContent="جارٍ طلب الرد... قد يستغرق الأمر دقيقة أو أكثر.";
+  try{
+    const response=await fetch("/admin/api/qarm/codex-local/chat",{
+      method:"POST",credentials:"same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:prompt.value,confirm_plan_usage:true})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw Error(data.detail || "تعذرت المحادثة.");
+    answer.textContent=data.answer || "لم يصل رد نصي.";
+  }catch(e){
+    answer.textContent="تعذر الحصول على رد: "+e.message;
+  }finally{confirmUsage.checked=false;send.disabled=!ready;}
+});
+refreshStatus();
+</script>
+</body>
+</html>
