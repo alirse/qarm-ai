@@ -31,7 +31,11 @@ def _csrf_token(request: Request) -> str:
     """Unpredictable session-bound HMAC; never return or log the cookie itself."""
     cookie = request.cookies.get(COOKIE_NAME, "")
     secret = os.environ.get("QARM_ADMIN_PASSWORD", "")
-    if len(secret) < 12 or not cookie or not valid_cookie(request, check_write_origin=False):
+    if (
+        len(secret) < 12
+        or not cookie
+        or not valid_cookie(request, check_write_origin=False)
+    ):
         return ""
     key = hashlib.sha256(("qarm-codex-csrf-v1:" + secret).encode()).digest()
     return hmac.new(key, cookie.encode(), hashlib.sha256).hexdigest()
@@ -43,7 +47,6 @@ def require_codex_write(request: Request) -> None:
     expected = _csrf_token(request)
     if not expected or not supplied or not hmac.compare_digest(expected, supplied):
         raise HTTPException(status_code=401, detail="Qarm owner login required")
-
 
 
 _CODEX_PAGE = Path(__file__).resolve().parent / "admin_static" / "qarm_codex_local.html"
@@ -89,7 +92,11 @@ def native_codex_login_status() -> str:
     return "unknown"
 
 
-@router.get("/admin/api/qarm/codex-local", include_in_schema=False, dependencies=[Depends(require_loopback_admin)])
+@router.get(
+    "/admin/api/qarm/codex-local",
+    include_in_schema=False,
+    dependencies=[Depends(require_loopback_admin)],
+)
 def native_codex_status(request: Request) -> dict[str, str | bool]:
     """No network inference, no credential reads, no model usage."""
     login = native_codex_login_status()
@@ -103,7 +110,9 @@ def native_codex_status(request: Request) -> dict[str, str | bool]:
 
 
 @router.get(
-    "/admin/qarm/codex-local", response_class=HTMLResponse, include_in_schema=False,
+    "/admin/qarm/codex-local",
+    response_class=HTMLResponse,
+    include_in_schema=False,
     dependencies=[Depends(require_loopback_admin)],
 )
 def native_codex_page() -> HTMLResponse:
@@ -158,13 +167,21 @@ def _last_agent_message(output: bytes) -> str | None:
     return answer[:_MAX_RESPONSE_CHARS] if answer else None
 
 
-@router.post("/admin/api/qarm/codex-local/preflight", include_in_schema=False, dependencies=[Depends(require_codex_write)])
+@router.post(
+    "/admin/api/qarm/codex-local/preflight",
+    include_in_schema=False,
+    dependencies=[Depends(require_codex_write)],
+)
 def native_codex_owner_write_preflight() -> dict[str, bool]:
     """Verify owner cookie and CSRF protection for writes without model usage."""
     return {"owner_write_authorized": True, "inference_performed": False}
 
 
-@router.post("/admin/api/qarm/codex-local/chat", include_in_schema=False, dependencies=[Depends(require_codex_write)])
+@router.post(
+    "/admin/api/qarm/codex-local/chat",
+    include_in_schema=False,
+    dependencies=[Depends(require_codex_write)],
+)
 async def native_codex_chat(payload: NativeCodexPrompt) -> dict[str, str]:
     """One owner-initiated native ChatGPT-plan turn; never use paid API keys."""
     if native_codex_login_status() != "chatgpt":
