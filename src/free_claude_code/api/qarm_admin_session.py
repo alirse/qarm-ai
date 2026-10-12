@@ -51,6 +51,27 @@ def _request_origin(request: Request) -> str | None:
     return reconstructed if _origin_allowed(reconstructed) else None
 
 
+def _valid_forwarded_https_origin(origin: str | None) -> bool:
+    """Allow browser-observed HTTPS proxy origins only with Fetch Metadata."""
+    if not origin:
+        return False
+    try:
+        value = urlsplit(origin)
+        return (
+            value.scheme == "https"
+            and bool(value.hostname)
+            and value.username is None
+            and value.password is None
+            and value.port is None
+            and not value.path
+            and not value.query
+            and not value.fragment
+            and value.netloc == value.hostname
+        )
+    except ValueError:
+        return False
+
+
 def new_cookie(origin: str) -> str:
     password = _password()
     if len(password) < 12 or not _origin_allowed(origin):
@@ -86,7 +107,7 @@ def valid_cookie(request: Request) -> bool:
             # Codespaces proxies can alter the public origin.
             # Trust browser-generated same-origin fetch metadata only.
             if not (
-                request_origin is not None
+                _valid_forwarded_https_origin(request.headers.get("origin"))
                 and request.headers.get("sec-fetch-site") == "same-origin"
                 and request.headers.get("sec-fetch-mode") in {"cors", "same-origin"}
             ):
