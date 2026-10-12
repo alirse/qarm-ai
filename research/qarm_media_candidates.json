@@ -156,6 +156,24 @@
       "inference_in_qarm": "not_integrated",
       "policy_review": "required_before_integration",
       "source": "https://huggingface.co/Lightricks/LTX-2"
+    },
+    {
+      "model_id": "Lightricks/LTX-2.3",
+      "capabilities": [
+        "text_to_video",
+        "image_to_video",
+        "audio_video"
+      ],
+      "styles": [
+        "general",
+        "cinematic"
+      ],
+      "license": "ltx-2-community-license-agreement",
+      "free_browser_demo_url": null,
+      "demo_status_at_review": "api_playground_exists_cost_unverified",
+      "inference_in_qarm": "not_integrated",
+      "policy_review": "required_before_integration",
+      "source": "https://huggingface.co/Lightricks/LTX-2.3"
     }
   ]
 }
