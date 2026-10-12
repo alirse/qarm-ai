@@ -5,9 +5,16 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from starlette.requests import Request
 
+from free_claude_code.api.qarm_image_contracts import (
+    FLUX_MODEL_ID,
+    JUGGERNAUT_MODEL_ID,
+    REALVIS_MODEL_ID,
+    QarmImagePlanRequest,
+)
 from free_claude_code.api.qarm_image_engine import QarmImageRequest
 from free_claude_code.api.qarm_media_routes import (
     list_qarm_image_models,
+    prepare_qarm_image,
     qarm_image_gallery,
     qarm_media_catalog,
     router,
@@ -48,11 +55,12 @@ def test_catalog_never_enables_generation_or_billing():
 
 
 def test_routes_are_get_only_without_generation_or_write_operations():
-    assert len(router.routes) == 3
+    assert len(router.routes) == 4
     assert {route.path: route.methods for route in router.routes} == {
         "/admin/api/qarm/media/models": {"GET"},
         "/admin/qarm/images": {"GET"},
         "/admin/api/qarm/media/mock": {"POST"},
+        "/admin/api/qarm/media/prepare": {"POST"},
     }
 
 
@@ -142,3 +150,79 @@ def test_mock_rejects_untrusted_client(monkeypatch):
             request,
         )
     assert exc.value.status_code == 403
+
+
+def test_prepare_flux_positional_api_without_any_inference(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    payload = QarmImagePlanRequest(
+        model_id=FLUX_MODEL_ID,
+        prompt="Golden desert sunrise",
+        width=768,
+        height=512,
+        steps=4,
+        seed=42,
+    )
+    plan = prepare_qarm_image(
+        payload, _request("127.0.0.1:8000", "127.0.0.1")
+    )
+    assert plan["space_id"] == "black-forest-labs/FLUX.1-schnell"
+    assert plan["api_name"] == "/infer"
+    assert plan["args"] == ["Golden desert sunrise", 42, False, 768, 512, 4]
+    assert plan["contract_complete"] is True
+    assert plan["generation_allowed"] is False
+    assert plan["submitted"] is False
+    assert plan["quota_verified"] is False
+    assert plan["external_requests"] == 0
+    assert plan["billing_enabled"] is False
+    assert plan["maximum_spend_usd"] == 0
+
+
+@pytest.mark.parametrize("model_id", [REALVIS_MODEL_ID, JUGGERNAUT_MODEL_ID])
+def test_prepare_does_not_invent_unknown_dropdown_choices(model_id, monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    plan = prepare_qarm_image(
+        QarmImagePlanRequest(model_id=model_id, prompt="A studio portrait"),
+        _request("127.0.0.1:8000", "127.0.0.1"),
+    )
+    assert plan["contract_complete"] is False
+    assert plan["args"] is None
+    assert plan["submitted"] is False
+    assert plan["external_requests"] == 0
+
+
+def test_prepare_blocks_paid_overrides_invalid_dimensions_and_unknown_models(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    with pytest.raises(ValidationError):
+        QarmImagePlanRequest(model_id=FLUX_MODEL_ID, prompt="Test", paid=True)
+    with pytest.raises(ValidationError):
+        QarmImagePlanRequest(model_id=FLUX_MODEL_ID, prompt="Test", width=769)
+    with pytest.raises(ValidationError):
+        QarmImagePlanRequest(model_id=FLUX_MODEL_ID, prompt=" ", steps=0)
+
+    with pytest.raises(HTTPException) as exc:
+        prepare_qarm_image(
+            QarmImagePlanRequest(model_id="untrusted/model", prompt="Test"),
+            _request("127.0.0.1:8000", "127.0.0.1"),
+        )
+    assert exc.value.status_code == 422
+
+
+def test_prepare_denies_untrusted_client(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    with pytest.raises(HTTPException) as exc:
+        prepare_qarm_image(
+            QarmImagePlanRequest(model_id=FLUX_MODEL_ID, prompt="Test"),
+            _request("public.example", "192.0.2.10"),
+        )
+    assert exc.value.status_code == 403
+
+
+def test_gallery_displays_non_sending_preflight_ui(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    page = qarm_image_gallery(
+        _request("127.0.0.1:8000", "127.0.0.1", path="/admin/qarm/images")
+    )
+    html = page.body.decode("utf-8")
+    assert 'id="prepareButton"' in html
+    assert "/admin/api/qarm/media/prepare" in html
+    assert "plan.submitted !== false" in html
