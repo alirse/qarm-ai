@@ -175,17 +175,64 @@ def test_prepare_flux_positional_api_without_any_inference(monkeypatch):
     assert plan["maximum_spend_usd"] == 0
 
 
-@pytest.mark.parametrize("model_id", [REALVIS_MODEL_ID, JUGGERNAUT_MODEL_ID])
-def test_prepare_does_not_invent_unknown_dropdown_choices(model_id, monkeypatch):
+@pytest.mark.parametrize(
+    ("model_id", "expected_api", "expected_length", "expected_first"),
+    [
+        (REALVIS_MODEL_ID, "/generate", 12, "REALVISXL V5.0"),
+        (JUGGERNAUT_MODEL_ID, "/run", 10, JUGGERNAUT_MODEL_ID),
+    ],
+)
+def test_prepare_verified_public_choice_defaults_without_inference(
+    model_id, expected_api, expected_length, expected_first, monkeypatch
+):
     monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
     plan = prepare_qarm_image(
         QarmImagePlanRequest(model_id=model_id, prompt="A studio portrait"),
         _request("127.0.0.1:8000", "127.0.0.1"),
     )
+    assert plan["contract_complete"] is True
+    assert len(plan["args"]) == expected_length
+    assert plan["args"][0] == expected_first
+    assert plan["api_name"] == expected_api
+    assert plan["generation_allowed"] is False
+    assert plan["submitted"] is False
+    assert plan["external_requests"] == 0
+    assert plan["billing_enabled"] is False
+    assert plan["quota_verified"] is False
+
+
+def test_realvis_and_juggernaut_use_publicly_observed_options(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    request = _request("127.0.0.1:8000", "127.0.0.1")
+    realvis = prepare_qarm_image(
+        QarmImagePlanRequest(model_id=REALVIS_MODEL_ID, prompt="Test"),
+        request,
+    )
+    assert realvis["args"][4] == "Style Zero"
+    assert realvis["args"][8] == 3.0
+    assert realvis["args"][9] == 28
+    assert realvis["args"][11] == 1
+
+    juggernaut = prepare_qarm_image(
+        QarmImagePlanRequest(model_id=JUGGERNAUT_MODEL_ID, prompt="Test"),
+        request,
+    )
+    assert juggernaut["args"][7] == 30
+    assert juggernaut["args"][8] == "DPM++ 2M SDE Karras"
+    assert juggernaut["args"][9] == "1024 x 1024"
+
+
+def test_juggernaut_fails_closed_on_mismatched_size(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    plan = prepare_qarm_image(
+        QarmImagePlanRequest(
+            model_id=JUGGERNAUT_MODEL_ID, prompt="Test", width=768, height=768
+        ),
+        _request("127.0.0.1:8000", "127.0.0.1"),
+    )
     assert plan["contract_complete"] is False
     assert plan["args"] is None
     assert plan["submitted"] is False
-    assert plan["external_requests"] == 0
 
 
 def test_prepare_blocks_paid_overrides_invalid_dimensions_and_unknown_models(
@@ -198,6 +245,14 @@ def test_prepare_blocks_paid_overrides_invalid_dimensions_and_unknown_models(
         QarmImagePlanRequest(model_id=FLUX_MODEL_ID, prompt="Test", width=769)
     with pytest.raises(ValidationError):
         QarmImagePlanRequest(model_id=FLUX_MODEL_ID, prompt=" ", steps=0)
+    with pytest.raises(ValidationError):
+        QarmImagePlanRequest(
+            model_id=REALVIS_MODEL_ID, prompt="Test", realvis_quality="unknown"
+        )
+    with pytest.raises(ValidationError):
+        QarmImagePlanRequest(
+            model_id=JUGGERNAUT_MODEL_ID, prompt="Test", juggernaut_sampler="unknown"
+        )
 
     with pytest.raises(HTTPException) as exc:
         prepare_qarm_image(
