@@ -2,6 +2,7 @@
 
 from collections.abc import Awaitable, Callable, Mapping
 from pathlib import Path
+import os
 
 import httpx
 from fastapi import (
@@ -31,6 +32,7 @@ from free_claude_code.core.json_types import JsonObject, JsonValue
 from free_claude_code.core.version import package_version
 
 from .admin_security import require_loopback_admin
+from .qarm_admin_session import COOKIE_NAME, MAX_AGE, new_cookie, valid_login_password, _origin_allowed
 from .dependencies import get_services
 from .ports import ApiServices
 
@@ -103,6 +105,64 @@ def admin_page_response() -> HTMLResponse:
     return HTMLResponse(
         template.replace(_ADMIN_ASSET_VERSION_PLACEHOLDER, package_version())
     )
+
+
+class QarmLoginPayload(BaseModel):
+    password: str
+
+
+@router.get("/admin/login", include_in_schema=False)
+def qarm_login_page():
+    """Explicit private sign-in page instead of repeated Basic Auth prompts."""
+    return HTMLResponse(
+        """<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>قرم — دخول المالك</title>
+<style>body{font-family:system-ui;background:#f7f8fc;display:grid;place-items:center;min-height:90vh}
+main{background:white;padding:2rem;border-radius:16px;max-width:370px;width:85%;box-shadow:0 6px 35px #0001}
+input,button{box-sizing:border-box;display:block;width:100%;padding:12px;margin-top:12px;border-radius:8px}
+button{background:#2463eb;color:white;border:0;cursor:pointer}p{color:#b42318}</style></head>
+<body><main><h2>تسجيل دخول مالك قرم</h2>
+<form id="login"><label for="password">كلمة مرور قرم</label>
+<input id="password" type="password" required autocomplete="current-password" minlength="12">
+<button type="submit">دخول</button></form><p id="error" role="alert"></p></main>
+<script>
+document.getElementById("login").addEventListener("submit",async e=>{
+e.preventDefault(); const button=e.target.querySelector("button");button.disabled=true;
+const password=document.getElementById("password").value;
+try { const response=await fetch("/admin/api/qarm-login",{
+method:"POST",headers:{"Content-Type":"application/json"},
+credentials:"same-origin",body:JSON.stringify({password})});
+if(!response.ok)throw Error("تعذر تسجيل الدخول. تأكد من كلمة المرور وإعداد رابط قرم.");
+location.replace("/admin");
+}catch(err){document.getElementById("error").textContent=err.message;button.disabled=false;}
+});
+</script></body></html>""",
+        headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
+    )
+
+
+@router.post("/admin/api/qarm-login", include_in_schema=False)
+def qarm_login(payload: QarmLoginPayload, request: Request, response: Response):
+    configured_origin = os.environ.get("QARM_ADMIN_PUBLIC_ORIGIN", "").rstrip("/")
+    # Authenticate on a single explicitly configured HTTPS Codespaces origin.
+    if not _origin_allowed(configured_origin):
+        raise HTTPException(status_code=403, detail="Private Codespaces origin not configured")
+    if request.headers.get("origin") != configured_origin:
+        raise HTTPException(status_code=403, detail="Wrong browser origin")
+    if not valid_login_password(payload.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    response.set_cookie(
+        COOKIE_NAME,
+        new_cookie(configured_origin),
+        max_age=MAX_AGE,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        path="/admin",
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return {"ok": True}
 
 
 @router.get("/admin", include_in_schema=False)
