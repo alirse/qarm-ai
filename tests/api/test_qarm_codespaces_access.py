@@ -19,6 +19,28 @@ from free_claude_code.cli.qarm_codespaces_access import (
 )
 
 
+
+@pytest.fixture(autouse=True)
+def isolate_owner_login_process_environment():
+    """The bootstrap intentionally sets os.environ; never leak it across tests."""
+    keys = (
+        "QARM_ADMIN_PASSWORD",
+        "QARM_ADMIN_PUBLIC_ORIGIN",
+        "CODESPACES",
+        "CODESPACE_NAME",
+        "HOME",
+    )
+    original = {key: os.environ.get(key) for key in keys}
+    try:
+        yield
+    finally:
+        for key, value in original.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
 def _setup(monkeypatch, tmp_path: Path):
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("CODESPACES", "true")
