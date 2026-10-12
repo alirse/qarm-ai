@@ -6,10 +6,11 @@ weights. Never equate a Gradio endpoint listing with approved/free inference.
 
 from pathlib import Path
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from .admin_security import require_loopback_admin
+from .qarm_image_engine import QarmImageRequest, simulate_image
 
 router = APIRouter()
 _IMAGES_PAGE = Path(__file__).resolve().parent / "admin_static" / "qarm_images.html"
@@ -91,3 +92,12 @@ def qarm_image_gallery(request: Request) -> HTMLResponse:
             "X-Content-Type-Options": "nosniff",
         },
     )
+
+
+@router.post("/admin/api/qarm/media/mock")
+def simulate_qarm_image(payload: QarmImageRequest, request: Request) -> dict:
+    """Owner-only simulation. Never call a real image provider."""
+    require_loopback_admin(request)
+    if payload.model_id not in {entry["id"] for entry in _IMAGE_MODELS}:
+        raise HTTPException(status_code=422, detail="Unknown Qarm image model")
+    return simulate_image(model_id=payload.model_id)
