@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>قرم | البحث المتخصص</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#261e3a;background:#faf7f0}
+*{box-sizing:border-box}body{margin:0}main{max-width:970px;margin:auto;padding:25px 18px 60px}
+header{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+a{color:#4f3290}header a{text-decoration:none;font-weight:650}
+h1{font-size:clamp(1.65rem,5vw,2.6rem);margin:25px 0 10px}
+p{line-height:1.8;color:#645d6a}
+.panel,.source,.notice{background:#fff;border:1px solid #e6e0ed;border-radius:17px;padding:20px}
+.panel{margin:20px 0}label{font-weight:700;display:block;margin:13px 0 6px}
+input,select,button{font:inherit}input,select{border:1px solid #cec5d8;border-radius:9px;width:100%;padding:11px;background:#fff}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:16px}
+button{background:#59339b;color:#fff;border:0;padding:12px 23px;border-radius:10px;margin-top:18px;font-weight:750;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #b792fa;outline-offset:2px}
+#results{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px;margin:18px 0}
+.source h2{font-size:1.05rem;line-height:1.6;margin:3px 0 7px}
+.source a{overflow-wrap:anywhere}.domain{font-size:.86rem;color:#6b5c7c}
+.excerpt{color:#4b4453;line-height:1.75;font-size:.95rem;word-break:break-word}
+.notice{margin-top:28px;font-size:.92rem;line-height:1.8}
+small{color:#6b626e}#status{font-weight:650}
+</style>
+</head>
+<body><main>
+<header><strong>قرم | Qarm AI</strong><a href="/admin">العودة للوحة قرم ←</a></header>
+<h1>البحث الذكي والمتخصص</h1>
+<p>ابحث عن شيء محدد، احصر النتائج بموقع معين، واقرأ مقتطفات من المصادر في وضع البحث المعمّق. لا تحتاج مفتاح API أو بطاقة بنكية.</p>
+<form class="panel" id="searchForm">
+<label for="query">عن وش تبي تبحث؟</label>
+<input id="query" required minlength="2" maxlength="260" placeholder="مثال: شروط التمويل الشخصي الجديدة في السعودية">
+<div class="cols">
+<div><label for="phrase">عبارة مطابقة (اختياري)</label><input id="phrase" maxlength="120" placeholder="مثال: معدل النسبة السنوي"></div>
+<div><label for="site">البحث داخل موقع (اختياري)</label><input id="site" maxlength="253" dir="ltr" placeholder="sama.gov.sa"></div>
+<div><label for="mode">طريقة البحث</label>
+<select id="mode"><option value="deep">معمّق — قراءة 3 مصادر</option><option value="quick">سريع — روابط النتائج</option></select></div>
+<div><label for="maxResults">عدد النتائج</label>
+<select id="maxResults"><option value="5">5</option><option value="8" selected>8</option><option value="10">10</option></select></div>
+</div>
+<button id="searchButton" type="submit">ابدأ البحث</button>
+</form>
+<p id="status" role="status" aria-live="polite"></p>
+<div id="results" aria-label="نتائج البحث"></div>
+<div class="notice">
+<strong>كيف يعمل البحث؟</strong>
+يرسل قرم عبارة البحث إلى DuckDuckGo ويعرض روابط المصادر. إذا اخترت البحث المعمّق، يحاول فتح أول ثلاثة مصادر عامة لعرض جزء من محتواها. لا يجري حاليًا تلخيصًا بالذكاء الاصطناعي، ولا تُعد مقتطفات المواقع حقائق موثقة قبل التحقق منها.
+قد ترفض بعض المواقع فتح محتواها أو تحجب البحث الآلي. ولا يستخدم قرم مزودًا مدفوعًا بدلًا منها تلقائيًا.
+</div>
+</main>
+<script>
+"use strict";
+const form=document.getElementById("searchForm");
+const output=document.getElementById("results");
+const status=document.getElementById("status");
+function showResults(data){
+  output.replaceChildren();
+  for(const result of data.results){
+    const card=document.createElement("article");card.className="source";
+    const title=document.createElement("h2");
+    const link=document.createElement("a");
+    let parsed;
+    try{parsed=new URL(result.url);}catch{continue;}
+    if(!["http:","https:"].includes(parsed.protocol)||parsed.username||parsed.password)continue;
+    link.href=parsed.href;link.textContent=result.title||parsed.hostname;
+    link.target="_blank";link.rel="noopener noreferrer";
+    title.append(link);card.append(title);
+    const domain=document.createElement("div");domain.className="domain";domain.textContent=parsed.hostname;card.append(domain);
+    if(result.excerpt){
+      const description=document.createElement("p");description.className="excerpt";
+      description.textContent=result.excerpt;card.append(description);
+    }else{
+      const note=document.createElement("small");
+      note.textContent=result.read_status==="unavailable"?"تعذر فتح محتوى المصدر، والرابط متاح.":"";
+      card.append(note);
+    }
+    output.append(card);
+  }
+}
+form.addEventListener("submit",async event=>{
+  event.preventDefault();
+  const button=document.getElementById("searchButton");button.disabled=true;
+  output.replaceChildren();status.textContent="جارٍ البحث وجمع المصادر...";
+  try{
+    const response=await fetch("/admin/api/qarm/search",{
+      method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        query:document.getElementById("query").value,
+        exact_phrase:document.getElementById("phrase").value,
+        site:document.getElementById("site").value,
+        mode:document.getElementById("mode").value,
+        max_results:Number(document.getElementById("maxResults").value)
+      })
+    });
+    if(!response.ok){
+      const data=await response.json().catch(()=>({}));
+      throw Error(typeof data.detail==="string"?data.detail:"تعذر البحث");
+    }
+    const data=await response.json();
+    if(data.billing_enabled!==false||data.answer_generated!==false||!Array.isArray(data.results)){
+      throw Error("استجابة غير متوقعة من محرك البحث");
+    }
+    showResults(data);
+    status.textContent=`وجدنا ${data.results.length} نتائج من الإنترنت. البحث لا يستخدم رصيد API مدفوعًا.`;
+    if(!data.results.length)status.textContent="ما ظهرت نتائج مطابقة. جرّب تبسيط الكلمات أو إزالة تقييد الموقع.";
+  }catch(error){
+    status.textContent="تعذر البحث الآن: "+error.message;
+  }finally{button.disabled=false;}
+});
+</script>
+</body></html>
