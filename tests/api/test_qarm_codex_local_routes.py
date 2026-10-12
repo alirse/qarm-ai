@@ -38,12 +38,13 @@ def test_login_status_only_executes_local_codex_status_and_never_reads_tokens(
         )
 
     monkeypatch.setattr(bridge.subprocess, "run", fake_run)
-    result = bridge.native_codex_status()
+    result = bridge.native_codex_status(_request())
     assert result == {
         "login": "chatgpt",
         "ready_for_native_chat": True,
         "qarm_oauth_is_separate": True,
         "inference_performed": False,
+        "csrf_token": "",
     }
     assert len(calls) == 1
     assert calls[0][0] == ["/usr/local/bin/codex", "login", "status"]
@@ -84,7 +85,7 @@ def test_no_cli_or_failed_cli_never_triggers_inference(monkeypatch):
             returncode=1, stdout="", stderr="not authenticated"
         ),
     )
-    assert bridge.native_codex_status()["ready_for_native_chat"] is False
+    assert bridge.native_codex_status(_request())["ready_for_native_chat"] is False
 
 
 def test_page_is_protected_and_mentions_quota_not_unlimited(monkeypatch):
@@ -103,6 +104,7 @@ def test_page_is_protected_and_mentions_quota_not_unlimited(monkeypatch):
     assert "/admin/api/qarm/codex-local" in text
     assert "confirm_plan_usage:true" in text
     assert "confirmUsage.checked" in text
+    assert '"X-Qarm-CSRF":csrfToken' in text
     assert "/admin/api/qarm/codex-local/preflight" in text
     assert "لا يستخدم هذا المسار مفاتيح API المدفوعة" in text
     assert "answer.textContent" in text
@@ -241,3 +243,40 @@ def test_owner_write_preflight_never_calls_codex(monkeypatch):
         "owner_write_authorized": True,
         "inference_performed": False,
     }
+
+
+def test_csrf_session_allows_post_even_if_codespaces_proxy_alters_headers(monkeypatch):
+    from unittest.mock import patch
+    from free_claude_code.api.qarm_admin_session import COOKIE_NAME, new_cookie, valid_cookie
+    origin = "https://example-8082.app.github.dev"
+    with patch.dict("os.environ", {
+        "QARM_ADMIN_PASSWORD": "local-secret-pass",
+        "QARM_ADMIN_PUBLIC_ORIGIN": origin,
+    }):
+        cookie = new_cookie(origin)
+        base = [
+            (b"cookie", f"{COOKIE_NAME}={cookie}".encode()),
+            (b"origin", b"https://proxy-example.test"),
+        ]
+        def req(method, headers):
+            return Request({
+                "type": "http", "method": method,
+                "path": "/admin/api/qarm/codex-local/chat",
+                "headers": headers,
+                "server": ("127.0.0.1", 8082),
+                "client": ("192.0.2.30", 8888),
+                "scheme": "http",
+            })
+        assert not valid_cookie(req("POST", base))
+        token = bridge._csrf_token(req("GET", base))
+        assert len(token) == 64
+        bridge.require_codex_write(req("POST", base + [(b"x-qarm-csrf", token.encode())]))
+        with pytest.raises(HTTPException) as missing:
+            bridge.require_codex_write(req("POST", base))
+        assert missing.value.status_code == 401
+        with pytest.raises(HTTPException) as wrong:
+            bridge.require_codex_write(req("POST", base + [(b"x-qarm-csrf", b"wrong")]))
+        assert wrong.value.status_code == 401
+        with pytest.raises(HTTPException) as unauthenticated:
+            bridge.require_codex_write(req("POST", [(b"x-qarm-csrf", token.encode())]))
+        assert unauthenticated.value.status_code == 401
