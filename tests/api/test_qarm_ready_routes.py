@@ -1,8 +1,8 @@
 """Passive Qarm readiness UI: no auth calls, model inference or expenses."""
 
-from html.parser import HTMLParser
 import shutil
 import subprocess
+from html.parser import HTMLParser
 
 import pytest
 from fastapi import HTTPException
