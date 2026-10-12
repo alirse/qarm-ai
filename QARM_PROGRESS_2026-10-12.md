@@ -19,6 +19,26 @@
 - [ ] بناء كتالوج عرض وتشغيل صور وفيديو منفصل عن بوابة المحادثة، مع إيقاف المدفوع افتراضيًا.
 - [ ] إيجاد استضافة مناسبة للاستخدام من الكمبيوتر والآيفون عند الحاجة دون وعد باستضافة مجانية دائمة غير موثقة.
 
+## اختبار الصورة الثالثة — تحديث 2026-10-12
+- [x] **بحسب إفادة المالك والصورة المرفقة بالمحادثة**: نجح توليد صورة بشرية واقعية بـ `black-forest-labs/FLUX.1-schnell` على العرض التجريبي، إضافة إلى نجاح Juggernaut XL وRealVisXL V5 سابقًا.
+- الملاحظة البصرية: إضاءة وشعر وتكوين جيد؛ البشرة شديدة التنعيم وبعض تفاصيل اليدين غير مثالية. لا يمكن ترتيب النماذج بدقة دون الصور الثلاث وإعدادات مماثلة.
+- لم تُرفع صورة المستخدم إلى مستودع GitHub العام حفاظًا على الخصوصية.
+- لم ينفذ أي استدعاء آلي لتوليد الصور بواسطة قرم؛ الحالة الفنية للربط ما زالت `not_integrated`.
+
+## نتيجة قراءة تطبيقات Gradio قبل الربط
+- `artificialguybr/JUGGERNAUT-XL-FREE-DEMO` يعرّف `api_name="run"` في `app.py`؛ هذا **لا يثبت نجاح استدعاء خارجي**.
+- `black-forest-labs/FLUX.1-schnell` يعرّف دالة `infer` عبر Gradio؛ اسم ومسار API الفعلي يجب اكتشافهما عبر OpenAPI.
+- `seawolf2357/REALVISXL-V5` يقدم واجهة Gradio مع `show_api=False`؛ مدى صلاحية استدعائه برمجيًا يحتاج تحققًا منفصلًا.
+- عمومًا تدعم Gradio Spaces واجهات API وفق توثيق Hugging Face، لكن وجود واجهة لا يضمن قدرة الوصول أو الحصة أو ترخيص استعمالها لقرم.
+- المرحلة الآمنة التالية: **فحص قراءة بيانات Space والـ OpenAPI فقط**، ثم واجهة نماذج صور بنمط **غير مفعّل افتراضيًا** حتى التأكد من قابلية استخدامها دون تكلفة.
+
+مصادر:
+- https://huggingface.co/docs/hub/en/spaces-api-endpoints
+- https://huggingface.co/docs/hub/spaces-zerogpu
+- https://huggingface.co/spaces/artificialguybr/JUGGERNAUT-XL-FREE-DEMO/blob/main/app.py
+- https://huggingface.co/spaces/black-forest-labs/FLUX.1-schnell/blob/main/app.py
+- https://huggingface.co/spaces/seawolf2357/REALVISXL-V5/blob/main/app.py
+
 ## الخطوة العملية التالية: اختبار محلي بلا تكلفة
 من الطرفية **داخل مجلد المستودع** في Codespaces:
 ```bash
