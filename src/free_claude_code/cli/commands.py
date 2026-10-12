@@ -69,6 +69,23 @@ def _start_admin_browser(
 
 def serve() -> None:
     """Start and supervise the FastAPI server."""
+    # Codespaces is remote even when its forwarded port is Private. Bootstrap
+    # a persistent owner password + exact HTTPS origin before app construction.
+    # Never print a secret to logs, and never change non-Codespaces behavior.
+    from .qarm_codespaces_access import prepare_codespaces_owner_login
+
+    try:
+        owner_login_url = prepare_codespaces_owner_login(get_settings().port)
+    except (OSError, ValueError) as exc:
+        logger.error("Could not prepare private Codespaces owner login: {}", exc)
+        raise SystemExit(1) from None
+    if owner_login_url:
+        logger.info("Qarm owner login: {}", owner_login_url)
+        logger.info(
+            "To see your saved owner password, run in a separate Codespaces "
+            "terminal: uv run --no-sync python -m "
+            "free_claude_code.cli.qarm_codespaces_access"
+        )
     try:
         ServerSupervisor().run()
     except OSError as exc:
