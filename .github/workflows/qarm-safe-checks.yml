@@ -1,0 +1,37 @@
+# Qarm owner branch: automatic zero-inference checks only.
+# Public standard GitHub-hosted runners are free; never run if repo becomes private.
+name: Qarm Safe Checks
+
+on:
+  push:
+    branches:
+      - qarm/python-version-setup
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qarm-safe-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image-catalog:
+    name: Image catalog / no inference
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Restore existing project CI environment
+        uses: ./.github/actions/ci-environment
+        with:
+          uv-version: "0.12.13"
+          runner-label: ubuntu-latest
+
+      - name: Test Qarm image catalog without network inference
+        run: uv run --locked --no-sync pytest -q -o addopts='' tests/api/test_qarm_media_routes.py
