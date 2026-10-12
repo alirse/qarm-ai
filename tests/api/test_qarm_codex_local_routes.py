@@ -233,7 +233,8 @@ def test_readiness_has_native_codex_link():
 
 def test_owner_write_preflight_never_calls_codex(monkeypatch):
     monkeypatch.setattr(
-        bridge, "native_codex_login_status",
+        bridge,
+        "native_codex_login_status",
         lambda: pytest.fail("No Codex status or inference during owner preflight"),
     )
     assert bridge.native_codex_owner_write_preflight() == {
