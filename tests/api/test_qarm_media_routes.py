@@ -2,12 +2,15 @@
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 from starlette.requests import Request
 
+from free_claude_code.api.qarm_image_engine import QarmImageRequest
 from free_claude_code.api.qarm_media_routes import (
     list_qarm_image_models,
     qarm_image_gallery,
     qarm_media_catalog,
+    simulate_qarm_image,
     router,
 )
 
@@ -43,13 +46,14 @@ def test_catalog_never_enables_generation_or_billing():
 
 
 def test_routes_are_get_only_without_generation_or_write_operations():
-    assert len(router.routes) == 2
+    assert len(router.routes) == 3
     assert {
         route.path: route.methods
         for route in router.routes
     } == {
         "/admin/api/qarm/media/models": {"GET"},
         "/admin/qarm/images": {"GET"},
+        "/admin/api/qarm/media/mock": {"POST"},
     }
 
 
@@ -86,5 +90,59 @@ def test_gallery_denies_untrusted_client(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         qarm_image_gallery(
             _request("public.example", "192.0.2.10", path="/admin/qarm/images")
+        )
+    assert exc.value.status_code == 403
+
+
+def test_mock_pipeline_works_offline_with_unmistakable_watermark(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    model = qarm_media_catalog()["models"][0]["id"]
+    request = _request("127.0.0.1:8000", "127.0.0.1")
+    result = simulate_qarm_image(
+        QarmImageRequest(model_id=model, prompt="A sunny garden"), request
+    )
+    assert result["status"] == "mock_completed"
+    assert result["model_id"] == model
+    assert result["actual_generation"] is False
+    assert result["external_requests"] == 0
+    assert result["gpu_minutes_consumed"] == 0
+    assert result["estimated_cost_usd"] == 0
+    import base64
+
+    svg = base64.b64decode(result["result_data_uri"].split(",", 1)[1])
+    assert b"QARM MOCK" in svg
+    assert b"NO REAL IMAGE GENERATED" in svg
+    assert b"A sunny garden" not in svg
+
+
+def test_mock_blocks_unknown_model_and_extra_paid_flags(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    request = _request("127.0.0.1:8000", "127.0.0.1")
+    with pytest.raises(HTTPException) as exc:
+        simulate_qarm_image(
+            QarmImageRequest(model_id="paid/provider", prompt="Test"), request
+        )
+    assert exc.value.status_code == 422
+
+    with pytest.raises(ValidationError):
+        QarmImageRequest(
+            model_id=qarm_media_catalog()["models"][0]["id"],
+            prompt="Test", paid=True
+        )
+    with pytest.raises(ValidationError):
+        QarmImageRequest(
+            model_id=qarm_media_catalog()["models"][0]["id"], prompt="  "
+        )
+
+
+def test_mock_rejects_untrusted_client(monkeypatch):
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
+    request = _request("public.example", "192.0.2.10")
+    with pytest.raises(HTTPException) as exc:
+        simulate_qarm_image(
+            QarmImageRequest(
+                model_id=qarm_media_catalog()["models"][0]["id"], prompt="Test"
+            ),
+            request,
         )
     assert exc.value.status_code == 403
