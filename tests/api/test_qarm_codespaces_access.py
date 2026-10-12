@@ -72,9 +72,7 @@ def test_codespaces_first_launch_generates_persistent_private_secret(
     assert os.environ["QARM_ADMIN_PASSWORD"] == password
 
 
-def test_remote_login_is_protected_even_when_port_is_public(
-    monkeypatch, tmp_path
-):
+def test_remote_login_is_protected_even_when_port_is_public(monkeypatch, tmp_path):
     origin = _setup(monkeypatch, tmp_path)
     prepare_codespaces_owner_login(8082)
     password = os.environ["QARM_ADMIN_PASSWORD"]
@@ -182,13 +180,9 @@ def test_explicit_operator_credentials_are_preserved(monkeypatch, tmp_path):
         prepare_codespaces_owner_login(8082)
 
 
-def test_server_entrypoint_invokes_codespaces_bootstrap_once(
-    monkeypatch, tmp_path
-):
+def test_server_entrypoint_invokes_codespaces_bootstrap_once(monkeypatch, tmp_path):
     origin = _setup(monkeypatch, tmp_path)
-    monkeypatch.setattr(
-        commands, "get_settings", lambda: SimpleNamespace(port=8082)
-    )
+    monkeypatch.setattr(commands, "get_settings", lambda: SimpleNamespace(port=8082))
     run_calls = []
     monkeypatch.setattr(
         commands.ServerSupervisor, "run", lambda self: run_calls.append(True)
