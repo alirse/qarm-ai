@@ -267,6 +267,7 @@ def test_csrf_session_allows_post_even_if_codespaces_proxy_alters_headers(monkey
             (b"cookie", f"{COOKIE_NAME}={cookie}".encode()),
             (b"origin", b"https://proxy-example.test"),
         ]
+
         def req(method, headers):
             return Request(
                 {
@@ -279,6 +280,7 @@ def test_csrf_session_allows_post_even_if_codespaces_proxy_alters_headers(monkey
                     "scheme": "http",
                 }
             )
+
         assert not valid_cookie(req("POST", base))
         token = bridge._csrf_token(req("GET", base))
         assert len(token) == 64
