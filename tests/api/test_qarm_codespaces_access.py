@@ -19,7 +19,6 @@ from free_claude_code.cli.qarm_codespaces_access import (
 )
 
 
-
 @pytest.fixture(autouse=True)
 def isolate_owner_login_process_environment():
     """The bootstrap intentionally sets os.environ; never leak it across tests."""
