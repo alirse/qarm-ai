@@ -4,7 +4,6 @@ import os
 import stat
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
 
 import pytest
 from fastapi import HTTPException, Response
