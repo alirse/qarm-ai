@@ -49,15 +49,17 @@
     </section>
     <section class="mock-panel" aria-label="تجربة المحرك الوهمي">
       <h2>اختبار محرك قرم — محاكاة فقط</h2>
-      <p>اختر نموذجًا واكتب وصفًا لاختبار إرسال الطلب داخل خادم قرم. الناتج صورة ثابتة تحمل كلمة MOCK وليس صورة من أي نموذج.</p>
+      <p>اختر نموذجًا واكتب وصفًا لاختبار إرسال الطلب داخل خادم قرم. الناتج صورة ثابتة تحمل كلمة MOCK وليس صورة من أي نموذج. يمكنك أيضًا تحضير حمولة API الحقيقية ومراجعتها دون إرسال أي شيء للخارج.</p>
       <form id="mockForm">
         <label for="mockModel">النموذج</label>
         <select id="mockModel" required></select>
         <label for="mockPrompt">وصف الصورة</label>
         <textarea id="mockPrompt" required maxlength="1200" placeholder="اكتب وصف الصورة المراد توليدها مستقبلًا"></textarea>
         <button id="mockButton" type="submit">اختبار المحاكاة المجانية</button>
+        <button id="prepareButton" type="button">تحضير طلب النموذج (بدون إرسال)</button>
       </form>
       <p id="mockStatus" role="status" aria-live="polite"></p>
+      <pre id="planResult" hidden style="direction:ltr;text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;padding:15px;background:#f5f0fa;border-radius:10px" aria-live="polite"></pre>
       <div id="mockResult">
         <strong>هذه محاكاة، وليست صورة مولّدة بالذكاء الاصطناعي.</strong>
         <img id="mockImage" alt="صورة ثابتة تجريبية تحمل عبارة QARM MOCK — لا يوجد توليد فعلي">
@@ -151,6 +153,48 @@
         status.textContent = "اكتملت المحاكاة المحلية. التكلفة: صفر. لم يتم توليد صورة حقيقية.";
       } catch (error) {
         status.textContent = "فشل اختبار المحاكاة. تأكد من أن نسخة قرم والخادم محدثان.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+    document.getElementById("prepareButton").addEventListener("click", async () => {
+      const output = document.getElementById("planResult");
+      const button = document.getElementById("prepareButton");
+      const prompt = document.getElementById("mockPrompt").value;
+      output.hidden = false;
+      if (!prompt.trim()) {
+        output.textContent = "اكتب وصف الصورة أولًا.";
+        return;
+      }
+      button.disabled = true;
+      output.textContent = "جارٍ تجهيز الطلب محليًا دون توليد...";
+      try {
+        const response = await fetch("/admin/api/qarm/media/prepare", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          credentials: "same-origin",
+          body: JSON.stringify({
+            model_id: document.getElementById("mockModel").value,
+            prompt
+          })
+        });
+        if (!response.ok) throw new Error("Preflight failed");
+        const plan = await response.json();
+        if (plan.submitted !== false || plan.external_requests !== 0 ||
+            plan.generation_allowed !== false || plan.billing_enabled !== false) {
+          throw new Error("Unsafe preflight response");
+        }
+        output.textContent = JSON.stringify({
+          النموذج: plan.model_id,
+          واجهة_الربط: plan.api_name,
+          المدخلات_مكتملة: plan.contract_complete,
+          مدخلات_التجربة: plan.args,
+          تم_إرسال_طلب: plan.submitted,
+          تكلفة_بالدولار: plan.maximum_spend_usd,
+          ملاحظة: plan.note
+        }, null, 2);
+      } catch (error) {
+        output.textContent = "فشل تحضير الطلب. تأكد من تحديث الخادم وإعادة تسجيل الدخول.";
       } finally {
         button.disabled = false;
       }
