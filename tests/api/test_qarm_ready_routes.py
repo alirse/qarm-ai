@@ -57,14 +57,14 @@ def test_readiness_reads_only_existing_owner_status_without_secret_exposure(
     ):
         assert path in html
     assert 'credentials:"same-origin"' in html
-    assert 'Promise.allSettled(paths.map(getJson))' in html
-    assert 'info.connected===true' in html
-    assert 'info.available===true' in html
+    assert "Promise.allSettled(paths.map(getJson))" in html
+    assert "info.connected===true" in html
+    assert "info.available===true" in html
     assert "لا يعني وجود API مجاني غير محدود" in html
     assert 'refresh.addEventListener("click",inspect)' in html
     assert 'fetch(path,{credentials:"same-origin",cache:"no-store"})' in html
     assert '"POST"' not in html
-    assert 'auth/login' not in html
+    assert "auth/login" not in html
     assert "TAVILY_API_KEY" not in html
 
 
