@@ -42,6 +42,12 @@ aside{margin-top:24px;padding:18px;background:white;border:1px solid #e8deec;bor
 <p id="authInfo">التحقق من ربط حساب OpenAI فقط.</p>
 <p class="small">الاتصال بالحساب لا يثبت نجاح محادثة فعلية ولا يعني وجود API مجاني غير محدود.</p>
 </section>
+<section class="card" aria-labelledby="nativeTitle">
+<h2 id="nativeTitle">تسجيل دخول Codex CLI</h2>
+<div id="nativeState" class="state pending">جارٍ الفحص</div>
+<p id="nativeInfo">فحص تسجيل دخول الطرفية الحالي دون قراءة رموز حسابك.</p>
+<p class="small">هذا الاتصال مختلف عن OpenAI/ChatGPT في Providers، ويمكن استخدامه داخل <a href="/admin/qarm/codex-local">واجهة محادثة Codex</a> عند موافقتك على استهلاك حصة خطتك.</p>
+</section>
 <section class="card" aria-labelledby="codeTitle">
 <h2 id="codeTitle">جلسات البرمجة</h2>
 <div id="codeState" class="state pending">جارٍ الفحص</div>
@@ -84,9 +90,10 @@ async function getJson(path){
 async function inspect(){
   refresh.disabled=true;
   report.textContent="جارٍ قراءة حالات الخدمات دون أي إرسال إلى نموذج...";
-  ["auth","code","models"].forEach(key=>setState(key,"جارٍ الفحص","pending",""));
+  ["auth","native","code","models"].forEach(key=>setState(key,"جارٍ الفحص","pending",""));
   const paths=[
     "/admin/api/providers/openai/auth",
+    "/admin/api/qarm/codex-local",
     "/admin/api/code/bootstrap",
     "/admin/api/models"
   ];
@@ -104,7 +111,19 @@ async function inspect(){
   }else{
     setState("auth","تعذر التحقق","error","لا يمكن قراءة حالة حساب ChatGPT من الخادم الحالي.");
   }
-  const code=results[1];
+  const native=results[1];
+  if(native.status==="fulfilled"){
+    if(native.value.login==="chatgpt" && native.value.ready_for_native_chat===true){
+      setState("native","متصل بحساب ChatGPT","ok","Codex CLI مسجل محليًا ويمكن محاولة محادثة بإذنك. لم يُرسل أي طلب إلى النموذج.");
+    }else if(native.value.login==="api_key"){
+      setState("native","API مدفوع أو مفتاح API","error","هذا المسار يرفض تسجيل الدخول بمفتاح API؛ نسمح فقط بجلسة ChatGPT المحلية.");
+    }else{
+      setState("native","غير متصل","pending","Codex CLI لا يعلن حاليًا عن تسجيل دخول ChatGPT صالح محليًا.");
+    }
+  }else{
+    setState("native","تعذر الفحص","error","تعذر التأكد من حالة Codex CLI.");
+  }
+  const code=results[2];
   if(code.status==="fulfilled"){
     const info=code.value;
     if(info.available===true){
@@ -116,7 +135,7 @@ async function inspect(){
   }else{
     setState("code","تعذر التحقق","error","تعذرت قراءة حالة جلسات البرمجة.");
   }
-  const models=results[2];
+  const models=results[3];
   if(models.status==="fulfilled"&&Array.isArray(models.value.models)){
     const count=models.value.models.length;
     setState("models",count+" نموذجًا مدرجًا",count?"ok":"pending",
@@ -125,7 +144,7 @@ async function inspect(){
     setState("models","تعذر التحقق","error","تعذرت قراءة قائمة النماذج.");
   }
   const successful=results.filter(value=>value.status==="fulfilled").length;
-  report.textContent="انتهى الفحص المحلي: "+successful+" من 3 قراءات نجحت. لا يوجد استدلال أو تكلفة نموذج من هذا الفحص.";
+  report.textContent="انتهى الفحص المحلي: "+successful+" من 4 قراءات نجحت. لا يوجد استدلال أو تكلفة نموذج من هذا الفحص.";
   refresh.disabled=false;
 }
 refresh.addEventListener("click",inspect);
