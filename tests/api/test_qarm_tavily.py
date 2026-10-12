@@ -247,7 +247,21 @@ def test_status_never_exposes_key(monkeypatch, tmp_path):
 
 def test_invalid_caps_never_arm_tavily(monkeypatch, tmp_path):
     _free(monkeypatch, tmp_path)
-    monkeypatch.setenv("QARM_TAVILY_MONTHLY_CAP", "1000")
+    monkeypatch.setenv("QARM_TAVILY_MONTHLY_CAP", "1001")
     state = qarm_tavily.tavily_status()
     assert state["configured"] is False
     assert state["error"]
+
+
+def test_single_owner_has_full_1000_free_credits_by_default(monkeypatch, tmp_path):
+    _free(monkeypatch, tmp_path)
+    monkeypatch.delenv("QARM_TAVILY_MONTHLY_CAP")
+    status = qarm_tavily.tavily_status()
+    assert status["configured"] is True
+    assert status["monthly_local_credit_cap"] == 1000
+    assert status["monthly_local_credits_remaining"] == 1000
+
+
+def test_single_owner_can_explicitly_set_full_1000_limit(monkeypatch, tmp_path):
+    _free(monkeypatch, tmp_path, cap=1000)
+    assert qarm_tavily._cap() == 1000
