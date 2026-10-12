@@ -132,6 +132,12 @@ def _last_agent_message(output: bytes) -> str | None:
     return answer[:_MAX_RESPONSE_CHARS] if answer else None
 
 
+@router.post("/admin/api/qarm/codex-local/preflight", include_in_schema=False)
+def native_codex_owner_write_preflight() -> dict[str, bool]:
+    """Verify owner cookie and CSRF protection for writes without model usage."""
+    return {"owner_write_authorized": True, "inference_performed": False}
+
+
 @router.post("/admin/api/qarm/codex-local/chat", include_in_schema=False)
 async def native_codex_chat(payload: NativeCodexPrompt) -> dict[str, str]:
     """One owner-initiated native ChatGPT-plan turn; never use paid API keys."""
