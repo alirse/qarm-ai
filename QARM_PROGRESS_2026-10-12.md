@@ -39,6 +39,15 @@
 - https://huggingface.co/spaces/black-forest-labs/FLUX.1-schnell/blob/main/app.py
 - https://huggingface.co/spaces/seawolf2357/REALVISXL-V5/blob/main/app.py
 
+## نتيجة فحص صاحب المشروع الفعلي — 12 أكتوبر 2026
+- [x] شُغّل `scripts/qarm-media-api-check.py` بنجاح في Codespaces، حسب ناتج الطرفية المنشور في المحادثة.
+- [x] FLUX.1 Schnell: حالة `RUNNING`، `SDK=gradio`، والوصف المفتوح يعلن `POST /run/infer`.
+- [x] RealVisXL V5: حالة `RUNNING`، `SDK=gradio`، والوصف المفتوح يعلن `POST /run/generate`.
+- [x] Juggernaut XL: حالة `RUNNING`، `SDK=gradio`، والوصف المفتوح يعلن `POST /run/run` (مع نقاط أخرى غير مخصصة للتوليد).
+- [x] أُضيف `scripts/qarm-media-contract-check.py` لاستخراج أسماء ومدخلات ومخرجات الوظائف من إعدادات Gradio العامة عبر GET فقط. لم يُختبر بعد في Codespaces.
+- [ ] تحديد نموذج payload المقبول والتحقق من شروط استخدام API والحصة المجانية قبل إرسال أي طلب توليد حقيقي.
+- **ما زال الربط غير مفعّل**: مجرد إعلان API لا يعني القدرة على الاستدلال عن بعد أو مجانًا. لا تُنفذ استدعاءات صور مدفوعة، ولا تحذف أي نموذج.
+
 ## الخطوة العملية التالية: فحص واجهات عروض الصور دون توليد
 أُضيف السكربت `scripts/qarm-media-api-check.py`. ينفذ طلبات **GET** عامة فقط لاكتشاف metadata وOpenAPI للنماذج الثلاثة؛ لا يرسل prompt ولا يولّد صورة ولا يستهلك دقائق GPU بعملية استدلال ولا يطلب مفتاح أو بطاقة. لم يُنفذ بعد داخل Codespaces الفعلي. لا يضمن أن ربط التوليد متاح أو مجاني.
 
