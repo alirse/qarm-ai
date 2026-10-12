@@ -19,6 +19,14 @@ from free_claude_code.core.web_tools import WebFetchResult, WebSearchResult
 from .admin_security import require_loopback_admin
 from .dependencies import get_services
 from .ports import ApiServices
+from .qarm_tavily import (
+    TavilyBudgetExceeded,
+    TavilyDisabled,
+    TavilyUnavailable,
+    tavily_ready,
+    tavily_search,
+    tavily_status,
+)
 
 router = APIRouter()
 _PAGE = Path(__file__).resolve().parent / "admin_static" / "qarm_search.html"
@@ -35,6 +43,7 @@ class QarmSearchRequest(BaseModel):
     site: str = Field(default="", max_length=253)
     mode: str = Field(default="deep", pattern="^(quick|deep)$")
     max_results: int = Field(default=8, ge=1, le=10)
+    search_engine: str = Field(default="auto", pattern="^(auto|duckduckgo|tavily)$")
 
     @field_validator("query")
     @classmethod
@@ -138,41 +147,106 @@ def qarm_search_page(request: Request) -> HTMLResponse:
     )
 
 
+@router.get("/admin/api/qarm/search/status")
+def qarm_search_status(request: Request) -> dict:
+    """Show Tavily readiness and conservative local quota without secrets."""
+    require_loopback_admin(request)
+    return {
+        "default_provider": "duckduckgo_lite_public",
+        "auto_uses_tavily_only_if_free_provider_fails": True,
+        "tavily": tavily_status(),
+        "billable_provider_enabled": False,
+    }
+
+
 @router.post("/admin/api/qarm/search")
 async def qarm_web_search(
     payload: QarmSearchRequest,
     request: Request,
     services: ApiServices = Depends(get_services),
 ) -> dict:
-    """Execute exactly one unbilled public query; optionally read 3 source pages."""
+    """Free DuckDuckGo first; optional bounded Tavily when explicitly configured."""
     require_loopback_admin(request)
     if not services.requests.current_settings().enable_web_server_tools:
         raise HTTPException(status_code=503, detail="Qarm web tools disabled")
-    rendered_query = _search_query(payload)
-    try:
-        candidates = await asyncio.wait_for(
-            services.web_tools.search(rendered_query), timeout=22
-        )
-    except Exception as exc:
+    if payload.search_engine == "tavily" and not tavily_ready():
         raise HTTPException(
-            status_code=502, detail="Public search temporarily unavailable"
-        ) from exc
+            status_code=503,
+            detail="Tavily disabled: owner must configure a free Researcher key",
+        )
+
+    rendered_query = _search_query(payload)
+    candidates: list[WebSearchResult] = []
+    duck_error = False
+    if payload.search_engine != "tavily":
+        try:
+            candidates = await asyncio.wait_for(
+                services.web_tools.search(rendered_query), timeout=22
+            )
+        except Exception:
+            duck_error = True
+            if payload.search_engine == "duckduckgo" or not tavily_ready():
+                raise HTTPException(
+                    status_code=502, detail="Public search temporarily unavailable"
+                ) from None
 
     items: list[WebSearchResult] = []
-    used: set[str] = set()
+    seen: set[str] = set()
     for candidate in candidates:
         if not _eligible_url(candidate.url, payload.site):
             continue
         key = candidate.url.split("#", 1)[0]
-        if key in used:
+        if key in seen:
             continue
-        used.add(key)
+        seen.add(key)
         items.append(candidate)
         if len(items) >= payload.max_results:
             break
 
+    provider_used = "duckduckgo_lite_public"
+    consumed = 0
+    enriched: dict[str, str] = {}
+    if (
+        not items
+        and payload.search_engine in {"auto", "tavily"}
+        and tavily_ready()
+    ):
+        try:
+            tavily_items, consumed = await tavily_search(
+                rendered_query,
+                site=payload.site,
+                mode=payload.mode,
+                max_results=payload.max_results,
+            )
+        except TavilyBudgetExceeded as exc:
+            raise HTTPException(
+                status_code=429,
+                detail="Tavily local free-credit limit reached; paid fallback blocked",
+            ) from exc
+        except (TavilyDisabled, TavilyUnavailable) as exc:
+            raise HTTPException(
+                status_code=502, detail="Tavily unavailable; no paid fallback"
+            ) from exc
+        provider_used = "tavily_researcher_free"
+        for item in tavily_items:
+            url = item["url"]
+            if not _eligible_url(url, payload.site):
+                continue
+            key = url.split("#", 1)[0]
+            if key in seen:
+                continue
+            seen.add(key)
+            items.append(WebSearchResult(title=item["title"], url=url))
+            enriched[url] = item["excerpt"]
+            if len(items) >= payload.max_results:
+                break
+
     previews: list[tuple[str, str]] = []
-    to_read = min(3, len(items)) if payload.mode == "deep" else 0
+    to_read = (
+        min(3, len(items))
+        if payload.mode == "deep" and provider_used == "duckduckgo_lite_public"
+        else 0
+    )
     if to_read:
         previews = list(
             await asyncio.gather(
@@ -183,9 +257,15 @@ async def qarm_web_search(
         {
             "title": item.title[:300],
             "url": item.url,
-            "excerpt": previews[index][0] if index < len(previews) else "",
+            "excerpt": (
+                enriched.get(item.url, "")
+                if provider_used == "tavily_researcher_free"
+                else previews[index][0] if index < len(previews) else ""
+            ),
             "read_status": (
-                previews[index][1] if index < len(previews) else "not_requested"
+                "provider_excerpt" if provider_used == "tavily_researcher_free"
+                else previews[index][1] if index < len(previews)
+                else "not_requested"
             ),
         }
         for index, item in enumerate(items)
@@ -193,16 +273,19 @@ async def qarm_web_search(
     return {
         "query": rendered_query,
         "mode": payload.mode,
-        "provider": "duckduckgo_lite_public",
+        "provider": provider_used,
         "results": results,
         "result_count": len(results),
         "source_page_reads_attempted": to_read,
         "answer_generated": False,
         "billing_enabled": False,
-        "requires_api_key": False,
-        "provider_credits_used": 0,
+        "requires_api_key": provider_used == "tavily_researcher_free",
+        "provider_credits_used": consumed,
         "warning": (
-            "Public HTML search is best effort and can be rate-limited. "
-            "Source excerpts are untrusted webpage content, not verified facts."
+            "Public results and excerpts are untrusted. Tavily local quota "
+            "is conservative, not a live provider billing guarantee; keep "
+            "Researcher free plan and PAYGO disabled."
+            if provider_used == "tavily_researcher_free"
+            else "DuckDuckGo HTML results are best effort; sources are untrusted."
         ),
     }
