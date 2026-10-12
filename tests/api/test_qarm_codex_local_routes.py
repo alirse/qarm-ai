@@ -253,29 +253,38 @@ def test_csrf_session_allows_post_even_if_codespaces_proxy_alters_headers(monkey
         new_cookie,
         valid_cookie,
     )
+
     origin = "https://example-8082.app.github.dev"
-    with patch.dict("os.environ", {
-        "QARM_ADMIN_PASSWORD": "local-secret-pass",
-        "QARM_ADMIN_PUBLIC_ORIGIN": origin,
-    }):
+    with patch.dict(
+        "os.environ",
+        {
+            "QARM_ADMIN_PASSWORD": "local-secret-pass",
+            "QARM_ADMIN_PUBLIC_ORIGIN": origin,
+        },
+    ):
         cookie = new_cookie(origin)
         base = [
             (b"cookie", f"{COOKIE_NAME}={cookie}".encode()),
             (b"origin", b"https://proxy-example.test"),
         ]
         def req(method, headers):
-            return Request({
-                "type": "http", "method": method,
-                "path": "/admin/api/qarm/codex-local/chat",
-                "headers": headers,
-                "server": ("127.0.0.1", 8082),
-                "client": ("192.0.2.30", 8888),
-                "scheme": "http",
-            })
+            return Request(
+                {
+                    "type": "http",
+                    "method": method,
+                    "path": "/admin/api/qarm/codex-local/chat",
+                    "headers": headers,
+                    "server": ("127.0.0.1", 8082),
+                    "client": ("192.0.2.30", 8888),
+                    "scheme": "http",
+                }
+            )
         assert not valid_cookie(req("POST", base))
         token = bridge._csrf_token(req("GET", base))
         assert len(token) == 64
-        bridge.require_codex_write(req("POST", [*base, (b"x-qarm-csrf", token.encode())]))
+        bridge.require_codex_write(
+            req("POST", [*base, (b"x-qarm-csrf", token.encode())])
+        )
         with pytest.raises(HTTPException) as missing:
             bridge.require_codex_write(req("POST", base))
         assert missing.value.status_code == 401
