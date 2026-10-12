@@ -256,6 +256,7 @@ def test_openai_device_code_login_without_popup(
     card.get_by_role("button", name="Cancel sign-in").click()
     expect(card.get_by_role("button", name="Connect with device code")).to_be_enabled()
 
+
 def test_switch_browser_attempt_to_device_login(
     page: Page, admin_base_url: str, accounts: _Accounts
 ) -> None:
@@ -271,6 +272,7 @@ def test_switch_browser_attempt_to_device_login(
     )
     assert accounts.login_requests == [("openai", "browser"), ("openai", "device")]
     assert accounts.cancelled == ["openai"]
+
 
 def test_openai_connect_uses_browser_login(
     page: Page, admin_base_url: str, accounts: _Accounts
@@ -299,7 +301,7 @@ def test_openai_connect_uses_browser_login(
         "Finish signing in, then return to this page."
     )
     openai.get_by_role("button", name="Cancel sign-in", exact=True).click()
-    expect(openai.get_by_role("button", name="Connect", exact=True)).to_be_enabled()
+    expect(openai.get_by_role("button", name="Connect with device code")).to_be_enabled()
     expect(openai.get_by_role("button", name="Connect with device code")).to_be_enabled()
 
 
