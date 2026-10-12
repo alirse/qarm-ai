@@ -3,6 +3,7 @@
 import asyncio
 import inspect
 import logging
+import os
 import uuid
 from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import replace
@@ -219,9 +220,15 @@ class ApplicationRuntime:
         if self._draining or self._http_ready.is_set():
             return
         self._http_ready.set()
-        logging.getLogger("uvicorn.error").info(
-            "Admin UI: %s (local-only)", local_admin_url(self.settings)
-        )
+        public_origin = os.environ.get("QARM_ADMIN_PUBLIC_ORIGIN", "").rstrip("/")
+        if public_origin and os.environ.get("QARM_ADMIN_PASSWORD"):
+            logging.getLogger("uvicorn.error").info(
+                "Qarm owner login: %s/admin/login (password required)", public_origin
+            )
+        else:
+            logging.getLogger("uvicorn.error").info(
+                "Admin UI: %s (local-only)", local_admin_url(self.settings)
+            )
 
     def begin_shutdown(self) -> None:
         """Finish indefinite observer responses before the server drains HTTP."""
