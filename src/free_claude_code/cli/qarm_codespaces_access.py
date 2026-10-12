@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 _CODESPACE_NAME = re.compile(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\Z")
-_PASSWORD_LENGTH_MIN = 20
+_PASSWORD_LENGTH_MIN = 12
 
 
 def _codespaces_enabled() -> bool:
@@ -97,7 +97,7 @@ def prepare_codespaces_owner_login(port: int) -> str | None:
     if existing_password is not None and existing_password != "":
         if len(existing_password) < _PASSWORD_LENGTH_MIN:
             raise ValueError(
-                "Configured Qarm owner password must be at least 20 characters"
+                "Configured Qarm owner password must be at least 12 characters"
             )
     else:
         secret = _get_or_create_owner_password(owner_password_file())
