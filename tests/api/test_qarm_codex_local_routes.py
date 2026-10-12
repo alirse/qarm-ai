@@ -1,10 +1,6 @@
 """Offline, no-inference safety checks for native Codex CLI bridge."""
 
-import asyncio
 import json
-import shutil
-import subprocess
-from html.parser import HTMLParser
 from types import SimpleNamespace
 
 import pytest
@@ -13,7 +9,6 @@ from pydantic import ValidationError
 from starlette.requests import Request
 
 from free_claude_code.api import qarm_codex_local_routes as bridge
-from free_claude_code.api.app import create_app
 
 
 def _request(host="127.0.0.1:8082", client="127.0.0.1"):
@@ -126,7 +121,7 @@ def test_explicit_consent_required_at_api_boundary():
 
 @pytest.mark.asyncio
 async def test_chat_uses_native_chatgpt_login_no_api_key_and_read_only(
-    monkeypatch, tmp_path
+    monkeypatch
 ):
     monkeypatch.setattr(bridge, "native_codex_login_status", lambda: "chatgpt")
     monkeypatch.setattr(bridge, "_binary", lambda: "/mock/codex")
