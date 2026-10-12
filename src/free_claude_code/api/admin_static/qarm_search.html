@@ -39,16 +39,23 @@ small{color:#6b626e}#status{font-weight:650}
 <div><label for="site">البحث داخل موقع (اختياري)</label><input id="site" maxlength="253" dir="ltr" placeholder="sama.gov.sa"></div>
 <div><label for="mode">طريقة البحث</label>
 <select id="mode"><option value="deep">معمّق — قراءة 3 مصادر</option><option value="quick">سريع — روابط النتائج</option></select></div>
+<div><label for="searchEngine">محرك البحث</label>
+<select id="searchEngine">
+<option value="auto">تلقائي — DuckDuckGo أولًا</option>
+<option value="duckduckgo">DuckDuckGo فقط — بدون مفتاح</option>
+<option value="tavily" id="tavilyOption" disabled>Tavily — غير مفعّل</option>
+</select></div>
 <div><label for="maxResults">عدد النتائج</label>
 <select id="maxResults"><option value="5">5</option><option value="8" selected>8</option><option value="10">10</option></select></div>
 </div>
 <button id="searchButton" type="submit">ابدأ البحث</button>
 </form>
+<p id="tavilyState" role="status" style="font-size:.9rem"></p>
 <p id="status" role="status" aria-live="polite"></p>
 <div id="results" aria-label="نتائج البحث"></div>
 <div class="notice">
 <strong>كيف يعمل البحث؟</strong>
-يرسل قرم عبارة البحث إلى DuckDuckGo ويعرض روابط المصادر. إذا اخترت البحث المعمّق، يحاول فتح أول ثلاثة مصادر عامة لعرض جزء من محتواها. لا يجري حاليًا تلخيصًا بالذكاء الاصطناعي، ولا تُعد مقتطفات المواقع حقائق موثقة قبل التحقق منها.
+يرسل قرم عبارة البحث إلى DuckDuckGo ويعرض روابط المصادر. إذا اخترت البحث المعمّق، يحاول فتح أول ثلاثة مصادر عامة لعرض جزء من محتواها. لا يجري حاليًا تلخيصًا بالذكاء الاصطناعي، ولا تُعد مقتطفات المواقع حقائق موثقة قبل التحقق منها. Tavily اختياري ومقفول حتى يتأكد المالك من الخطة المجانية ويضبط المفتاح بشكل سري. الحد المحلي لا يعكس بالضرورة رصيد حساب Tavily عند المزود.
 قد ترفض بعض المواقع فتح محتواها أو تحجب البحث الآلي. ولا يستخدم قرم مزودًا مدفوعًا بدلًا منها تلقائيًا.
 </div>
 </main>
@@ -81,6 +88,25 @@ function showResults(data){
     output.append(card);
   }
 }
+async function loadTavilyStatus(){
+  const note=document.getElementById("tavilyState");
+  try{
+    const response=await fetch("/admin/api/qarm/search/status",{credentials:"same-origin",cache:"no-store"});
+    if(!response.ok)throw Error("Unavailable");
+    const data=await response.json();
+    const info=data.tavily;
+    const option=document.getElementById("tavilyOption");
+    option.disabled=!info.configured;
+    option.textContent=info.configured?"Tavily — بحث متقدم مجاني":"Tavily — غير مفعّل";
+    note.textContent=info.configured
+      ? "Tavily جاهز بالخطة التي أكدتها. المتبقي في الحد المحلي: "+info.monthly_local_credits_remaining+" رصيد (ليس رصيد الحساب الفعلي)."
+      : "Tavily مقفول افتراضيًا. البحث يعمل من DuckDuckGo دون أي مفتاح.";
+  }catch{
+    note.textContent="تعذر التأكد من حالة Tavily. سيبقى البحث المجاني الأول متاحًا.";
+    document.getElementById("tavilyOption").disabled=true;
+  }
+}
+loadTavilyStatus();
 form.addEventListener("submit",async event=>{
   event.preventDefault();
   const button=document.getElementById("searchButton");button.disabled=true;
@@ -90,6 +116,7 @@ form.addEventListener("submit",async event=>{
       method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
         query:document.getElementById("query").value,
+        search_engine:document.getElementById("searchEngine").value,
         exact_phrase:document.getElementById("phrase").value,
         site:document.getElementById("site").value,
         mode:document.getElementById("mode").value,
@@ -105,7 +132,8 @@ form.addEventListener("submit",async event=>{
       throw Error("استجابة غير متوقعة من محرك البحث");
     }
     showResults(data);
-    status.textContent=`وجدنا ${data.results.length} نتائج من الإنترنت. البحث لا يستخدم رصيد API مدفوعًا.`;
+    status.textContent=`وجدنا ${data.results.length} نتائج من ${data.provider==="tavily_researcher_free"?"Tavily":"DuckDuckGo"}. الرصيد المحلي المستخدم: ${data.provider_credits_used}.`;
+    if(data.provider==="tavily_researcher_free")loadTavilyStatus();
     if(!data.results.length)status.textContent="ما ظهرت نتائج مطابقة. جرّب تبسيط الكلمات أو إزالة تقييد الموقع.";
   }catch(error){
     status.textContent="تعذر البحث الآن: "+error.message;
