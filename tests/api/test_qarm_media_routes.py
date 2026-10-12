@@ -15,7 +15,9 @@ from free_claude_code.api.qarm_media_routes import (
 )
 
 
-def _request(host: str, client: str, path: str = "/admin/api/qarm/media/models") -> Request:
+def _request(
+    host: str, client: str, path: str = "/admin/api/qarm/media/models"
+) -> Request:
     return Request(
         {
             "type": "http",
@@ -47,10 +49,7 @@ def test_catalog_never_enables_generation_or_billing():
 
 def test_routes_are_get_only_without_generation_or_write_operations():
     assert len(router.routes) == 3
-    assert {
-        route.path: route.methods
-        for route in router.routes
-    } == {
+    assert {route.path: route.methods for route in router.routes} == {
         "/admin/api/qarm/media/models": {"GET"},
         "/admin/qarm/images": {"GET"},
         "/admin/api/qarm/media/mock": {"POST"},
@@ -126,13 +125,10 @@ def test_mock_blocks_unknown_model_and_extra_paid_flags(monkeypatch):
 
     with pytest.raises(ValidationError):
         QarmImageRequest(
-            model_id=qarm_media_catalog()["models"][0]["id"],
-            prompt="Test", paid=True
+            model_id=qarm_media_catalog()["models"][0]["id"], prompt="Test", paid=True
         )
     with pytest.raises(ValidationError):
-        QarmImageRequest(
-            model_id=qarm_media_catalog()["models"][0]["id"], prompt="  "
-        )
+        QarmImageRequest(model_id=qarm_media_catalog()["models"][0]["id"], prompt="  ")
 
 
 def test_mock_rejects_untrusted_client(monkeypatch):
