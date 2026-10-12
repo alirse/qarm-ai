@@ -1,0 +1,28 @@
+# Owner-approved one-time public web search verification. No paid API, no keys.
+name: Qarm One-Shot Free Web Search
+on:
+  push:
+    branches:
+      - qarm/python-version-setup
+    paths:
+      - .github/workflows/qarm-web-one-shot.yml
+permissions:
+  contents: read
+jobs:
+  live-free-search:
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Prepare existing CI environment
+        uses: ./.github/actions/ci-environment
+        with:
+          uv-version: "0.12.13"
+          runner-label: ubuntu-latest
+      - name: Single free public query
+        run: uv run --locked --no-sync python scripts/qarm-search-one-shot.py
