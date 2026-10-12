@@ -595,7 +595,7 @@ function populateConnectedAccountActions(provider, status, actions) {
     return;
   }
   const modes = Array.isArray(status.supported_login_modes) ? status.supported_login_modes : [];
-  const defaultMode = status.default_login_mode;
+  const defaultMode = providerId === "openai" && modes.includes("device") ? "device" : status.default_login_mode;
   if (!["browser", "device"].includes(defaultMode) || !modes.includes(defaultMode)) {
     actions.appendChild(authButton("Retry", () => refreshConnectedAccount(provider)));
     return;
