@@ -35,8 +35,8 @@ jobs:
 
       - name: Check Qarm image Python formatting and lint
         run: |
-          uv run --locked --no-sync ruff check src/free_claude_code/api/qarm_image_engine.py src/free_claude_code/api/qarm_media_routes.py tests/api/test_qarm_media_routes.py
-          uv run --locked --no-sync ruff format --check src/free_claude_code/api/qarm_image_engine.py src/free_claude_code/api/qarm_media_routes.py tests/api/test_qarm_media_routes.py
+          uv run --locked --no-sync ruff check src/free_claude_code/api/qarm_image_engine.py src/free_claude_code/api/qarm_image_contracts.py src/free_claude_code/api/qarm_media_routes.py tests/api/test_qarm_media_routes.py
+          uv run --locked --no-sync ruff format --check src/free_claude_code/api/qarm_image_engine.py src/free_claude_code/api/qarm_image_contracts.py src/free_claude_code/api/qarm_media_routes.py tests/api/test_qarm_media_routes.py
 
       - name: Test Qarm image catalog without network inference
         run: uv run --locked --no-sync pytest -q -o addopts='' tests/api/test_qarm_media_routes.py
