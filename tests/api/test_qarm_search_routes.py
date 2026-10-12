@@ -7,8 +7,6 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from starlette.requests import Request
 
-from free_claude_code.application.web_tools.ports import WebFetchEgressPolicy
-from free_claude_code.core.web_tools import WebFetchResult, WebSearchResult
 from free_claude_code.api.qarm_search_routes import (
     QarmSearchRequest,
     _search_query,
@@ -16,6 +14,8 @@ from free_claude_code.api.qarm_search_routes import (
     qarm_web_search,
     router,
 )
+from free_claude_code.application.web_tools.ports import WebFetchEgressPolicy
+from free_claude_code.core.web_tools import WebFetchResult, WebSearchResult
 
 
 def _request(host="127.0.0.1:8000", client="127.0.0.1"):
