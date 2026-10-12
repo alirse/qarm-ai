@@ -7,6 +7,8 @@ explicitly confirmed POST by the owner.
 """
 
 import asyncio
+import hashlib
+import hmac
 import json
 import os
 import shutil
@@ -15,13 +17,35 @@ import tempfile
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from .admin_security import require_loopback_admin
+from .qarm_admin_session import COOKIE_NAME, valid_cookie
 
-router = APIRouter(dependencies=[Depends(require_loopback_admin)])
+router = APIRouter()
+
+
+def _csrf_token(request: Request) -> str:
+    """Unpredictable session-bound HMAC; never return or log the cookie itself."""
+    cookie = request.cookies.get(COOKIE_NAME, "")
+    secret = os.environ.get("QARM_ADMIN_PASSWORD", "")
+    if len(secret) < 12 or not cookie or not valid_cookie(request, check_write_origin=False):
+        return ""
+    key = hashlib.sha256(("qarm-codex-csrf-v1:" + secret).encode()).digest()
+    return hmac.new(key, cookie.encode(), hashlib.sha256).hexdigest()
+
+
+def require_codex_write(request: Request) -> None:
+    """Signed owner cookie + per-session CSRF token, independent of proxy headers."""
+    supplied = request.headers.get("x-qarm-csrf", "")
+    expected = _csrf_token(request)
+    if not expected or not supplied or not hmac.compare_digest(expected, supplied):
+        raise HTTPException(status_code=401, detail="Qarm owner login required")
+
+
+
 _CODEX_PAGE = Path(__file__).resolve().parent / "admin_static" / "qarm_codex_local.html"
 _MAX_OUTPUT_BYTES = 1_500_000
 _MAX_RESPONSE_CHARS = 14000
@@ -65,8 +89,8 @@ def native_codex_login_status() -> str:
     return "unknown"
 
 
-@router.get("/admin/api/qarm/codex-local", include_in_schema=False)
-def native_codex_status() -> dict[str, str | bool]:
+@router.get("/admin/api/qarm/codex-local", include_in_schema=False, dependencies=[Depends(require_loopback_admin)])
+def native_codex_status(request: Request) -> dict[str, str | bool]:
     """No network inference, no credential reads, no model usage."""
     login = native_codex_login_status()
     return {
@@ -74,11 +98,13 @@ def native_codex_status() -> dict[str, str | bool]:
         "ready_for_native_chat": login == "chatgpt",
         "qarm_oauth_is_separate": True,
         "inference_performed": False,
+        "csrf_token": _csrf_token(request),
     }
 
 
 @router.get(
-    "/admin/qarm/codex-local", response_class=HTMLResponse, include_in_schema=False
+    "/admin/qarm/codex-local", response_class=HTMLResponse, include_in_schema=False,
+    dependencies=[Depends(require_loopback_admin)],
 )
 def native_codex_page() -> HTMLResponse:
     return HTMLResponse(
@@ -132,13 +158,13 @@ def _last_agent_message(output: bytes) -> str | None:
     return answer[:_MAX_RESPONSE_CHARS] if answer else None
 
 
-@router.post("/admin/api/qarm/codex-local/preflight", include_in_schema=False)
+@router.post("/admin/api/qarm/codex-local/preflight", include_in_schema=False, dependencies=[Depends(require_codex_write)])
 def native_codex_owner_write_preflight() -> dict[str, bool]:
     """Verify owner cookie and CSRF protection for writes without model usage."""
     return {"owner_write_authorized": True, "inference_performed": False}
 
 
-@router.post("/admin/api/qarm/codex-local/chat", include_in_schema=False)
+@router.post("/admin/api/qarm/codex-local/chat", include_in_schema=False, dependencies=[Depends(require_codex_write)])
 async def native_codex_chat(payload: NativeCodexPrompt) -> dict[str, str]:
     """One owner-initiated native ChatGPT-plan turn; never use paid API keys."""
     if native_codex_login_status() != "chatgpt":
