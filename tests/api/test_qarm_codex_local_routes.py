@@ -114,15 +114,14 @@ def test_explicit_consent_required_at_api_boundary():
         bridge.NativeCodexPrompt.model_validate(
             {"prompt": "Hello", "confirm_plan_usage": False}
         )
-    assert bridge.NativeCodexPrompt(
-        prompt="Hello", confirm_plan_usage=True
-    ).prompt == "Hello"
+    assert (
+        bridge.NativeCodexPrompt(prompt="Hello", confirm_plan_usage=True).prompt
+        == "Hello"
+    )
 
 
 @pytest.mark.asyncio
-async def test_chat_uses_native_chatgpt_login_no_api_key_and_read_only(
-    monkeypatch
-):
+async def test_chat_uses_native_chatgpt_login_no_api_key_and_read_only(monkeypatch):
     monkeypatch.setattr(bridge, "native_codex_login_status", lambda: "chatgpt")
     monkeypatch.setattr(bridge, "_binary", lambda: "/mock/codex")
     monkeypatch.setenv("OPENAI_API_KEY", "must-not-leak")
@@ -215,7 +214,9 @@ async def test_failure_does_not_expose_native_stderr_or_api_tokens(monkeypatch):
 def test_app_registers_native_codex_owner_routes():
     from free_claude_code.api import qarm_codex_local_routes
 
-    assert {route.path: route.methods for route in qarm_codex_local_routes.router.routes} == {
+    assert {
+        route.path: route.methods for route in qarm_codex_local_routes.router.routes
+    } == {
         "/admin/api/qarm/codex-local": {"GET"},
         "/admin/qarm/codex-local": {"GET"},
         "/admin/api/qarm/codex-local/chat": {"POST"},
