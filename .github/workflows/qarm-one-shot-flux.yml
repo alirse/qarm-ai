@@ -1,0 +1,39 @@
+# Explicit owner-approved SINGLE anonymous ZeroGPU image trial.
+# Fires when this workflow is first committed to the Qarm development branch.
+# No workflow_dispatch; no time-based recurrence; no paid providers.
+name: Qarm One-Shot FLUX ZeroGPU Trial
+
+on:
+  push:
+    branches:
+      - qarm/python-version-setup
+    paths:
+      - .github/workflows/qarm-one-shot-flux.yml
+
+permissions:
+  contents: read
+
+jobs:
+  one-image:
+    name: Generate one public anonymous FLUX test image
+    if: ${{ github.event.repository.private == false }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout public test script
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: One attempt only; no tokens, paid inference or fallback
+        env:
+          HF_TOKEN: ""
+          HUGGING_FACE_HUB_TOKEN: ""
+        run: python3 scripts/qarm-one-shot-flux-probe.py
+      - name: Store generated image only when actually produced
+        if: ${{ success() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0
+        with:
+          name: qarm-flux-one-free-image
+          path: qarm-flux-one-shot/
+          if-no-files-found: error
+          retention-days: 7
