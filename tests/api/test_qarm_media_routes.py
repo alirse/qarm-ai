@@ -162,9 +162,7 @@ def test_prepare_flux_positional_api_without_any_inference(monkeypatch):
         steps=4,
         seed=42,
     )
-    plan = prepare_qarm_image(
-        payload, _request("127.0.0.1:8000", "127.0.0.1")
-    )
+    plan = prepare_qarm_image(payload, _request("127.0.0.1:8000", "127.0.0.1"))
     assert plan["space_id"] == "black-forest-labs/FLUX.1-schnell"
     assert plan["api_name"] == "/infer"
     assert plan["args"] == ["Golden desert sunrise", 42, False, 768, 512, 4]
@@ -190,7 +188,9 @@ def test_prepare_does_not_invent_unknown_dropdown_choices(model_id, monkeypatch)
     assert plan["external_requests"] == 0
 
 
-def test_prepare_blocks_paid_overrides_invalid_dimensions_and_unknown_models(monkeypatch):
+def test_prepare_blocks_paid_overrides_invalid_dimensions_and_unknown_models(
+    monkeypatch,
+):
     monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
     with pytest.raises(ValidationError):
         QarmImagePlanRequest(model_id=FLUX_MODEL_ID, prompt="Test", paid=True)
