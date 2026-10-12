@@ -31,7 +31,7 @@ jobs:
         run: python3 scripts/qarm-one-shot-flux-probe.py
       - name: Store generated image only when actually produced
         if: ${{ success() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: qarm-flux-one-free-image
           path: qarm-flux-one-shot/
