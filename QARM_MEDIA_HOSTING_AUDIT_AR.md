@@ -37,7 +37,7 @@
 | أنمي إضافي | `OnomaAIResearch/Illustrious-XL-v1.0` | SDXL license | التشغيل والخدمة المجانية غير مثبتين |
 | تعديل صور | `black-forest-labs/FLUX.1-Kontext-dev` | رخصة BFL dev غير التجارية؛ غير مناسب للنشر التجاري دون اتفاق | التشغيل والخدمة المجانية غير مثبتين |
 | صور إلى فيديو ونص إلى فيديو | `Wan-AI/Wan2.2-TI2V-5B` | Apache 2.0؛ يتطلب **24GB VRAM على الأقل** في المثال الرسمي المحسن لتوليد 720p | HF يعرض مزود fal (مدفوع غالبًا)، ولا يوجد إثبات تشغيل مجاني مستدام |
-| فيديو وصوت | `Lightricks/LTX-2` | LTX-2 Community License، ليس Apache | لم نتحقق من خدمة مجانية مستقرة |
+| فيديو وصوت (الأحدث) | `Lightricks/LTX-2.3` | LTX-2 Community License، ليس Apache؛ إصدار أحدث من LTX-2 مع تحسينات موثقة من المطوّر | لديه API Playground للتجربة؛ **السعر/المجانية وحدود الاستخدام لم تُتحقق بعد** |
 
 مصادر النماذج والتراخيص:
 - https://huggingface.co/black-forest-labs/FLUX.1-schnell
@@ -47,7 +47,8 @@
 - https://huggingface.co/OnomaAIResearch/Illustrious-XL-v1.0
 - https://huggingface.co/black-forest-labs/FLUX.1-Kontext-dev
 - https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B
-- https://huggingface.co/Lightricks/LTX-2
+- https://huggingface.co/Lightricks/LTX-2.3
+- https://huggingface.co/Lightricks/LTX-2 (إصدار أقدم للمقارنة)
 
 ### مثال أسعار للمقارنة فقط — ممنوع الاتصال بهذه الخدمات الآن
 - Replicate يعرض `black-forest-labs/flux-schnell` بـ **$3 لكل 1000 صورة**؛ نحو **$0.003 للصورة**، قبل أي تغير أو اختلاف في شروط الخدمة.
