@@ -1,5 +1,9 @@
 # Qarm unified chat and media roadmap
 
+**2026-10-12 feasibility decision:** Use pre-existing Hugging Face ZeroGPU browser demos for no-card image trials, not model weights in Codespaces. Do not call any billable media API without explicit owner approval; default research budget is $0 and no images/videos are integrated yet. Daily free ZeroGPU is limited (currently 5 GPU minutes per Free account); free inference credits are only $0.10/month. Free reliable video compute remains unverified. Sources and evidence:
+- [Arabic media hosting/license audit](QARM_MEDIA_HOSTING_AUDIT_AR.md)
+- [Machine-readable candidate and cost guard reference](research/qarm_media_candidates.json)
+
 Status: design and feasibility research only. No media models installed and no media provider connected.
 
 ## Product goal
