@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>قرم | نماذج الصور</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#2b2140;background:#f9f5ee}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh}
+    .wrap{max-width:990px;margin:auto;padding:32px 20px 60px}
+    header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+    a{color:#5633a0}header a{text-decoration:none;font-weight:700}
+    .lead{margin-top:35px}.lead h1{font-size:clamp(1.8rem,5vw,2.8rem);margin:10px 0}
+    .lead p{line-height:1.9;max-width:700px;color:#645c70}
+    .chip{display:inline-block;border-radius:99px;background:#fff0ca;padding:6px 13px;font-size:.9rem;font-weight:700}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:25px}
+    .model{background:white;border:1px solid #e6dded;border-radius:20px;padding:22px;box-shadow:0 7px 22px #28154409}
+    .model h2{font-size:1.25rem;margin:2px 0 10px}
+    .model p{color:#6c6474;line-height:1.7}
+    .model a{display:inline-block;margin-top:7px;padding:11px 15px;border-radius:10px;background:#f0eafd;text-decoration:none;font-weight:700}
+    .inactive{color:#795128;font-weight:700;font-size:.93rem}
+    .warning{margin-top:27px;background:#fff;border:1px solid #e6dded;border-radius:14px;padding:18px;line-height:1.8}
+    #status{margin-top:20px;color:#6c6474}
+    button{cursor:pointer;border:1px solid #dad1e8;border-radius:9px;padding:9px 13px;background:white;color:#44316f}
+    button:focus-visible,a:focus-visible{outline:3px solid #8362c5;outline-offset:3px}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <strong>قرم | Qarm AI</strong>
+      <a href="/admin">العودة لإدارة قرم ←</a>
+    </header>
+    <section class="lead">
+      <span class="chip">معاينة النماذج — بدون رسوم</span>
+      <h1>نماذج توليد الصور</h1>
+      <p>هذه قائمة النماذج التي جرّبتها في المتصفح. يمكنك فتح العرض التجريبي لكل نموذج،
+         لكن التوليد المباشر داخل قرم لم يُربط بعد. لن يرسل قرم وصفًا أو صورة إلى أي مزود من هذه الصفحة.</p>
+    </section>
+    <section aria-label="نماذج الصور" id="models" class="grid"></section>
+    <p id="status" role="status" aria-live="polite">جارٍ تحميل قائمة النماذج...</p>
+    <section class="warning">
+      <strong>الحماية والتكلفة:</strong> سقف الإنفاق 0 دولار، ولا توجد طلبات توليد آلية أو مفاتيح API
+      أو اتصال GPU من قرم في هذه المرحلة. تشغيل أي تجربة في Hugging Face يخضع لحدود
+      وشروط مساحة العرض الخارجية، ولا يعني وجود حصة مجانية مضمونة للربط البرمجي.
+    </section>
+  </main>
+  <script>
+    "use strict";
+    const labels = {
+      "FLUX.1 Schnell": "صور عامة وواقعية",
+      "RealVisXL V5": "صور شخصية واقعية",
+      "Juggernaut XL": "تصوير سينمائي وواقعي"
+    };
+    function addModel(model) {
+      const card = document.createElement("article");
+      card.className = "model";
+      const title = document.createElement("h2");
+      title.textContent = model.name;
+      const style = document.createElement("p");
+      style.textContent = labels[model.name] || "توليد صور";
+      const state = document.createElement("p");
+      state.className = "inactive";
+      state.textContent = "تمت تجربته في المتصفح · غير مربوط بالتوليد في قرم";
+      const link = document.createElement("a");
+      link.textContent = "فتح التجربة على Hugging Face ↗";
+      const url = new URL(model.demo_url);
+      if (url.protocol !== "https:" || url.hostname !== "huggingface.co" ||
+          !url.pathname.startsWith("/spaces/")) {
+        throw new Error("Invalid demo URL");
+      }
+      link.href = url.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      card.append(title, style, state, link);
+      document.getElementById("models").append(card);
+    }
+    async function loadModels() {
+      const status = document.getElementById("status");
+      try {
+        const response = await fetch("/admin/api/qarm/media/models", {
+          credentials: "same-origin",
+          cache: "no-store"
+        });
+        if (!response.ok) throw new Error("تعذر قراءة الكتالوج المحمي");
+        const data = await response.json();
+        if (data.billing_enabled || data.generation_available ||
+            !Array.isArray(data.models)) {
+          throw new Error("حالة الكتالوج غير متوقعة");
+        }
+        data.models.forEach(addModel);
+        status.textContent = "3 نماذج · جميعها للعرض اليدوي فقط";
+      } catch (error) {
+        status.textContent = "تعذر عرض النماذج. أعد تسجيل الدخول إلى إدارة قرم ثم حدّث الصفحة.";
+      }
+    }
+    loadModels();
+  </script>
+</body>
+</html>
