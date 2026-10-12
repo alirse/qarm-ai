@@ -14,6 +14,7 @@ from .admin_security import require_loopback_admin
 from .dependencies import get_services
 from .handlers import MessagesHandler
 from .ports import ApiServices
+from .qarm_codex_local_routes import _csrf_token, require_codex_write
 from .request_ids import get_request_id
 from .response_streams import bind_response_lifetime
 from .routes import _provider_resolver
@@ -90,10 +91,26 @@ def chat_page(request: Request):
     )
 
 
+@router.get(
+    "/admin/api/qarm/chat/bootstrap",
+    include_in_schema=False,
+    dependencies=[Depends(require_loopback_admin)],
+)
+def chat_bootstrap(request: Request):
+    return {"csrf_token": _csrf_token(request)}
+
+
+def require_chat_write(request: Request) -> None:
+    if request.headers.get("x-qarm-csrf"):
+        require_codex_write(request)
+    else:
+        require_loopback_admin(request)
+
+
 @router.post(
     "/admin/api/qarm/chat",
     include_in_schema=False,
-    dependencies=[Depends(require_loopback_admin)],
+    dependencies=[Depends(require_chat_write)],
 )
 async def chat(
     payload: QarmChatRequest,

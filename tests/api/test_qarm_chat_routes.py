@@ -162,3 +162,54 @@ def test_signed_codespaces_owner_can_chat_and_cross_site_write_is_denied(monkeyp
             == 401
         )
         assert handler.return_value.create.await_count == 1
+
+
+def test_chat_session_csrf_survives_codespaces_proxy_origin_rewrite(monkeypatch):
+    from free_claude_code.api.qarm_admin_session import COOKIE_NAME, new_cookie
+
+    origin = "https://qarm-test-8082.app.github.dev"
+    monkeypatch.setenv("QARM_ADMIN_PASSWORD", "test-owner-password-that-is-long-enough")
+    monkeypatch.setenv("QARM_ADMIN_PUBLIC_ORIGIN", origin)
+    with (
+        patch("free_claude_code.api.qarm_chat_routes.MessagesHandler") as handler,
+        TestClient(create_test_app(), base_url=origin) as client,
+    ):
+        client.cookies.set(COOKIE_NAME, new_cookie(origin))
+        handler.return_value.create = AsyncMock(
+            return_value=JSONResponse({"content": [{"type": "text", "text": "أهلًا"}]})
+        )
+        token = client.get("/admin/api/qarm/chat/bootstrap").json()["csrf_token"]
+        assert len(token) == 64
+        proxy_headers = {"Origin": "https://internal-proxy.example"}
+        assert (
+            client.post(
+                "/admin/api/qarm/chat", json=payload(), headers=proxy_headers
+            ).status_code
+            == 401
+        )
+        assert (
+            client.post(
+                "/admin/api/qarm/chat",
+                json=payload(),
+                headers={**proxy_headers, "x-qarm-csrf": token},
+            ).status_code
+            == 200
+        )
+        assert (
+            client.post(
+                "/admin/api/qarm/chat",
+                json=payload(),
+                headers={**proxy_headers, "x-qarm-csrf": "wrong-token"},
+            ).status_code
+            == 401
+        )
+        client.cookies.clear()
+        assert (
+            client.post(
+                "/admin/api/qarm/chat",
+                json=payload(),
+                headers={**proxy_headers, "x-qarm-csrf": token},
+            ).status_code
+            == 401
+        )
+        assert handler.return_value.create.await_count == 1
