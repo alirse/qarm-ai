@@ -27,8 +27,8 @@ def main():
         problems.append("GROQ_API_KEY is missing or empty")
     if not password:
         problems.append("QARM_ADMIN_PASSWORD is missing or empty")
-    elif len(password) < 20:
-        problems.append("QARM_ADMIN_PASSWORD must contain at least 20 characters")
+    elif len(password) < 12:
+        problems.append("QARM_ADMIN_PASSWORD must contain at least 12 characters")
     if problems:
         # Report configuration names only; never log credentials or their values.
         raise SystemExit("Render configuration: " + "; ".join(problems))

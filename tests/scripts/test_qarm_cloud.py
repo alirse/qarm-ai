@@ -36,7 +36,7 @@ def test_cloud_requires_credentials_and_enables_proxy_auth(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     with pytest.raises(SystemExit):
         cloud.main()
-    monkeypatch.setenv("QARM_ADMIN_PASSWORD", "test-owner-password-long-enough")
+    monkeypatch.setenv("QARM_ADMIN_PASSWORD", "test-pass-12")
     monkeypatch.setenv("GROQ_API_KEY", "test-groq-credential")
     monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
     # Keep launch-time process changes isolated from later tests.
@@ -58,7 +58,7 @@ def test_cloud_requires_credentials_and_enables_proxy_auth(monkeypatch):
 
     assert called == [True]
     assert os.environ["PROXY_AUTH_ENABLED"] == "true"
-    assert len(os.environ["ANTHROPIC_AUTH_TOKEN"]) >= 20
+    assert len(os.environ["ANTHROPIC_AUTH_TOKEN"]) >= 12
     assert os.environ["MODEL"].startswith("groq/")
 
 
@@ -80,7 +80,7 @@ def test_deployment_blueprint_requests_only_free_compute():
         ("", "test-owner-password-long-enough", "GROQ_API_KEY is missing"),
         ("   ", "test-owner-password-long-enough", "GROQ_API_KEY is missing"),
         ("private-test-key", "", "QARM_ADMIN_PASSWORD is missing"),
-        ("private-test-key", "private-short", "at least 20 characters"),
+        ("private-test-key", "short-pass", "at least 12 characters"),
     ],
 )
 def test_configuration_error_identifies_field_without_revealing_secrets(
