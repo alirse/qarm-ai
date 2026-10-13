@@ -72,3 +72,28 @@ def test_deployment_blueprint_requests_only_free_compute():
         for entry in data["services"][0]["envVars"]
         if entry["key"] in {"GROQ_API_KEY", "QARM_ADMIN_PASSWORD"}
     )
+
+
+@pytest.mark.parametrize(
+    "key,password,expected",
+    [
+        ("", "test-owner-password-long-enough", "GROQ_API_KEY is missing"),
+        ("   ", "test-owner-password-long-enough", "GROQ_API_KEY is missing"),
+        ("private-test-key", "", "QARM_ADMIN_PASSWORD is missing"),
+        ("private-test-key", "private-short", "at least 20 characters"),
+    ],
+)
+def test_configuration_error_identifies_field_without_revealing_secrets(
+    monkeypatch, key, password, expected
+):
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://qarm.onrender.com")
+    monkeypatch.setenv("GROQ_API_KEY", key)
+    monkeypatch.setenv("QARM_ADMIN_PASSWORD", password)
+    with pytest.raises(SystemExit) as error:
+        cloud.main()
+    message = str(error.value)
+    assert expected in message
+    if key.strip():
+        assert key not in message
+    if password:
+        assert password not in message

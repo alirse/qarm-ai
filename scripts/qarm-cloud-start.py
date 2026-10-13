@@ -22,10 +22,16 @@ def main():
     ):
         raise SystemExit("A valid Render HTTPS address is required")
     password = os.environ.get("QARM_ADMIN_PASSWORD", "")
-    if len(password) < 20 or not os.environ.get("GROQ_API_KEY"):
-        raise SystemExit(
-            "Configure the existing Groq key and a private owner password in Render secrets"
-        )
+    problems = []
+    if not os.environ.get("GROQ_API_KEY", "").strip():
+        problems.append("GROQ_API_KEY is missing or empty")
+    if not password:
+        problems.append("QARM_ADMIN_PASSWORD is missing or empty")
+    elif len(password) < 20:
+        problems.append("QARM_ADMIN_PASSWORD must contain at least 20 characters")
+    if problems:
+        # Report configuration names only; never log credentials or their values.
+        raise SystemExit("Render configuration: " + "; ".join(problems))
     os.environ.update(
         {
             "QARM_ADMIN_PUBLIC_ORIGIN": origin,
