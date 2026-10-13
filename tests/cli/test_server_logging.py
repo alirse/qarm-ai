@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 import logging.config
+import os
 import subprocess
 import sys
 from contextlib import nullcontext
@@ -67,6 +68,9 @@ def _exercise_server_logging(
         logging.getLogger("test.dependency").warning("dependency warning")
 
     with (
+        patch.dict(
+            os.environ, {"QARM_ADMIN_PUBLIC_ORIGIN": "", "QARM_ADMIN_PASSWORD": ""}
+        ),
         patch("free_claude_code.runtime.bootstrap.build_asgi_app", build_app),
         patch.object(RuntimeServer, "run", run),
         patch.multiple(sys, stdout=None, stderr=None)

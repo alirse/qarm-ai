@@ -237,3 +237,27 @@ def test_long_history_has_no_arbitrary_turn_quota():
     ]
     prepared = prepare_chat(QarmChatRequest(messages=turns))
     assert len(prepared.messages) == 101
+
+
+def test_owner_instructions_reach_model_and_count_toward_budget():
+    request = QarmChatRequest.model_validate(
+        {**payload(), "instructions": "Use short answers"}
+    )
+    with patch(
+        "free_claude_code.api.qarm_chat_routes.get_token_count", return_value=7600
+    ) as count:
+        prepared = prepare_chat(request)
+    assert "Use short answers" in prepared.system
+    assert count.call_args.args[1] == prepared.system
+    assert prepared.max_tokens == 400
+
+
+def test_browser_home_redirects_to_chat_without_exposing_admin_data():
+    with TestClient(create_test_app()) as client:
+        response = client.get(
+            "/", headers={"Accept": "text/html"}, follow_redirects=False
+        )
+        assert response.status_code == 307
+        assert response.headers["location"] == "/admin/qarm/chat"
+        assert response.headers["cache-control"] == "no-store"
+        assert 'location.replace("/admin/qarm/chat")' in client.get("/admin/login").text

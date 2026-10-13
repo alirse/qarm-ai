@@ -33,6 +33,7 @@ from .ports import ApiServices
 from .qarm_chat_routes import router as qarm_chat_router
 from .qarm_codex_local_routes import router as qarm_codex_local_router
 from .qarm_hf_routes import router as qarm_hf_router
+from .qarm_home import QarmBrowserHomeMiddleware
 from .qarm_media_routes import router as qarm_media_router
 from .qarm_ready_routes import router as qarm_ready_router
 from .qarm_search_routes import router as qarm_search_router
@@ -52,6 +53,7 @@ def create_app(services: ApiServices) -> FastAPI:
     """Create the HTTP adapter around explicitly supplied runtime services."""
     app = FastAPI(title="Claude Code Proxy", version=package_version())
     app.state.services = services
+    app.add_middleware(QarmBrowserHomeMiddleware)
     app.add_middleware(AdminNoStoreMiddleware)
     app.add_middleware(ClientRequestLifetimeMiddleware)
     app.add_middleware(RequestOutcomeMiddleware)

@@ -12,7 +12,7 @@
 
 ## النشر المستقل
 
-أضيف `Dockerfile` و`render.yaml` وسكربت بدء محمي، بخطة Render Free فقط. **لم تُنشأ الاستضافة المستقلة بعد ولم تُنقل مفاتيح الحساب إليها.** تفاصيل النوم والتخزين والحماية في [دليل النشر](deploy/README.md).
+أضيف `Dockerfile` و`render.yaml` وسكربت بدء محمي، بخطة Render Free فقط. **خدمة Render Free تعمل على https://qarm-ai.onrender.com/admin/qarm/chat؛ تم اختبار دخول المالك ورد Groq الفعلي في 13 أكتوبر 2026.** تفاصيل النوم والتخزين والحماية في [دليل النشر](deploy/README.md).
 
 # قرم — Qarm AI
 
@@ -64,3 +64,7 @@ uv run --no-sync pytest -n 4 tests/api/test_qarm* tests/providers/test_groq* tes
 ### Personal-use limits and research (2026-10-12)
 
 Qarm does not impose a cumulative image quota or a 40-turn conversation quota. The image duplicate cache retains only the latest 256 IDs; evicting metadata does not delete generated files. Groq responses can request up to 8192 tokens and are bounded by the remaining estimated 8000-token-per-minute free allowance, with authoritative provider correction. Provider rate limits, context budgets and model behavior still apply; unlimited free inference or guaranteed accuracy is not promised. Deep research reads up to six public HTTPS sources and the workspace synthesizes their excerpts through the existing Groq model with numbered references. If synthesis fails, source cards remain available. Excerpts are partial and untrusted; citations require checking against the linked source.
+
+## تفضيلات المالك
+
+الحد الأدنى لكلمة الدخول 12 حرفًا؛ لا يُرفع دون طلب صريح من المالك. الدخول من المتصفح يفتح المحادثة مباشرة؛ لوحة المزودين متاحة في الإعدادات المتقدمة. زر «تخصيص قرم» يحفظ تعليمات المالك على المتصفح ويضيفها للمحادثة وتحليل البحث ضمن ميزانية التوكنات. التعليمات لا تتزامن بين الأجهزة ولا تمثل تدريبًا للنموذج.

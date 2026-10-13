@@ -15,6 +15,8 @@ ROOT = "/admin/api/integrations/jetbrains-acp"
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
+    # These tests exercise local access, independently of prior cloud setup.
+    monkeypatch.delenv("QARM_ADMIN_PASSWORD", raising=False)
     monkeypatch.setattr(jb, "config_path", lambda: tmp_path / "acp.json")
     monkeypatch.setattr(jb, "registry_path", lambda: tmp_path / "installed.json")
     monkeypatch.setattr(jb, "system_root", lambda: tmp_path / "systems")

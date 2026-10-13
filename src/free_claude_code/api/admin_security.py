@@ -109,7 +109,7 @@ def _same_origin(origin: str | None, host: str) -> bool:
 def _codespaces_authenticated(request: Request) -> bool:
     host = _codespaces_host(request.headers.get("host"))
     password = os.environ.get("QARM_ADMIN_PASSWORD", "")
-    if not host or len(password) < 20:
+    if not host or len(password) < 12:
         return False
     if request.headers.get("x-forwarded-proto") != "https":
         return False

@@ -1,8 +1,8 @@
 """Local admin UI routes and APIs."""
 
+import os
 from collections.abc import Awaitable, Callable, Mapping
 from pathlib import Path
-import os
 
 import httpx
 from fastapi import (
@@ -32,9 +32,15 @@ from free_claude_code.core.json_types import JsonObject, JsonValue
 from free_claude_code.core.version import package_version
 
 from .admin_security import require_loopback_admin
-from .qarm_admin_session import COOKIE_NAME, MAX_AGE, new_cookie, valid_login_password, _origin_allowed
 from .dependencies import get_services
 from .ports import ApiServices
+from .qarm_admin_session import (
+    COOKIE_NAME,
+    MAX_AGE,
+    _origin_allowed,
+    new_cookie,
+    valid_login_password,
+)
 
 router = APIRouter()
 
@@ -134,7 +140,7 @@ try { const response=await fetch("/admin/api/qarm-login",{
 method:"POST",headers:{"Content-Type":"application/json"},
 credentials:"same-origin",body:JSON.stringify({password})});
 if(!response.ok){const details=await response.json().catch(()=>({}));throw Error(details.detail || "تعذر تسجيل الدخول.");}
-location.replace("/admin");
+location.replace("/admin/qarm/chat");
 }catch(err){document.getElementById("error").textContent=err.message;button.disabled=false;}
 });
 </script></body></html>""",

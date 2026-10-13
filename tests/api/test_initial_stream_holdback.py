@@ -320,6 +320,8 @@ async def test_closing_prefetched_response_drains_timed_read(
         response = await asyncio.wait_for(_response(wire, executed(source, wire)), 2)
         await bind_response_lifetime(response, release)
         try:
+            # Wait for the gated read, rather than assuming scheduler timing.
+            await asyncio.wait_for(body.waiting.wait(), 2)
             assert body.waiting.is_set()
             assert not body.release.is_set()
             await response.aclose()

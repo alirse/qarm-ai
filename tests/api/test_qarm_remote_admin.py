@@ -64,3 +64,10 @@ def test_remote_cross_origin_write_denied(monkeypatch):
     assert status(request(host=host, client="10.0.0.1", authorization=credentials(), method="POST")) == 401
     assert status(request(host=host, client="10.0.0.1", authorization=credentials(), method="POST", origin="https://evil.example")) == 401
     assert status(request(host=host, client="10.0.0.1", authorization=credentials(), method="POST", origin=f"https://{host}")) == 200
+
+
+def test_remote_login_accepts_owner_minimum_of_twelve_characters(monkeypatch):
+    password = "test-pass-12"
+    monkeypatch.setenv("QARM_ADMIN_PASSWORD", password)
+    assert status(request(host="abc-8000.app.github.dev", client="10.0.0.1",
+                          authorization=credentials(password))) == 200

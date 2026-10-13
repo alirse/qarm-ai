@@ -4,7 +4,7 @@ The Admin UI is local-only by default. Qarm adds an opt-in remote login for HTTP
 
 ## Enable
 
-Set `QARM_ADMIN_PASSWORD` to a unique secret of 20+ characters **in the running server environment**. Do not save it in Git, commit it, paste it into chat, or put it in a URL. Run the updated server with that environment variable; open `https://<your-private-forwarded-host>/admin` and sign in with browser HTTP Basic credentials:
+Set `QARM_ADMIN_PASSWORD` to a unique secret of 12+ characters **in the running server environment**. Do not save it in Git, commit it, paste it into chat, or put it in a URL. Run the updated server with that environment variable; open `https://<your-private-forwarded-host>/admin` and sign in with browser HTTP Basic credentials:
 
 - Username: `qarm`
 - Password: the value of `QARM_ADMIN_PASSWORD`

@@ -41,6 +41,7 @@ class QarmChatRequest(BaseModel):
         "groq/openai/gpt-oss-120b"
     )
     messages: list[ChatTurn] = Field(min_length=1)
+    instructions: str = Field(default="", max_length=6000)
     stream: bool = False
     max_tokens: int = Field(default=1024, ge=256, le=8192, strict=True)
 
@@ -61,7 +62,10 @@ def prepare_chat(payload: QarmChatRequest) -> MessagesRequest:
     messages = [
         Message(role=turn.role, content=turn.content) for turn in payload.messages
     ]
-    estimated = get_token_count(messages, _SYSTEM)
+    system = _SYSTEM
+    if payload.instructions.strip():
+        system += "\n\nOwner instructions:\n" + payload.instructions.strip()
+    estimated = get_token_count(messages, system)
     # The provider enforces its authoritative TPM budget; token estimates are
     # approximate. Do not reserve an arbitrary portion of the free allowance.
     available = 8000 - estimated
@@ -72,7 +76,7 @@ def prepare_chat(payload: QarmChatRequest) -> MessagesRequest:
         )
     return MessagesRequest(
         model=payload.model,
-        system=_SYSTEM,
+        system=system,
         messages=messages,
         max_tokens=min(payload.max_tokens, available),
         stream=payload.stream,
